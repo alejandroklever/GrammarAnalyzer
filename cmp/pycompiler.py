@@ -53,8 +53,7 @@ class NonTerminal(Symbol):
             if len(other) == 2:
                 other += (None,) * len(other[0])
 
-            assert len(other) == len(
-                other[0]) + 2, "Debe definirse una, y solo una, regla por cada símbolo de la producción"
+            assert len(other) == len(other[0]) + 2, "Debe definirse una, y solo una, regla por cada símbolo de la producción"
             # assert len(other) == 2, "Tiene que ser una Tupla de 2 elementos (sentence, attribute)"
 
             if isinstance(other[0], Symbol) or isinstance(other[0], Sentence):

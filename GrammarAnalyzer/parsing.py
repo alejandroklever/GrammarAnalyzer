@@ -2,7 +2,7 @@ from cmp.automata import State, multiline_formatter
 from cmp.pycompiler import Grammar, Item
 from cmp.utils import ContainerSet
 
-from .tools import compute_firsts, compute_follows, compute_local_first
+from .firsts_follows_tools import compute_firsts, compute_follows, compute_local_first
 from .lr_automata import build_LR0_automaton, build_LR1_automaton, build_LALR1_automaton
 
 
@@ -22,7 +22,7 @@ class Parser:
 
     @property
     def firsts(self):
-        return self.firsts
+        return self._firsts
 
     @property
     def follows(self):
@@ -132,20 +132,24 @@ class ShiftReduceParser(Parser):
             action, tag = self.action[state, lookahead.token_type]
 
             if action == self.SHIFT:
-                stack += [lookahead, lookahead.lex, tag]
+                stack += [lookahead.token_type, lookahead.lex, tag]
                 cursor += 1
             elif action == self.REDUCE:
                 output.append(tag)
 
                 head, body = tag
-                attributes = tag.attributes[0]
-                syn = [None] * (len(body) + 1)
+                
+                try:
+                    attribute = tag.attributes[0]  # La gramatica es atributada
+                except AttributeError:
+                    attribute = None  # La gramatica es no atributada
 
+                syn = [None] * (len(body) + 1)
                 for i, symbol in enumerate(reversed(body), 1):
                     stack.pop()
                     syn[-i] = stack.pop()
                     assert symbol == stack.pop(), 'Bad Reduce'
-                syn[0] = attributes(syn) if attributes is not None else None
+                syn[0] = attribute(syn) if attribute is not None else None
 
                 state = stack[-1]
                 goto = self.goto[state, head]
@@ -164,8 +168,6 @@ class SLR1Parser(ShiftReduceParser):
 
     def _build_parsing_table(self):
         G = self.G.AugmentedGrammar(True)
-        firsts = compute_firsts(G)
-        follows = compute_follows(G, firsts)
 
         automaton = self.automaton_builder(G)
         for i, node in enumerate(automaton):
@@ -177,11 +179,10 @@ class SLR1Parser(ShiftReduceParser):
             idx = node.idx
             for item in node.state:
                 if item.IsReduceItem:
-                    head, _ = item.production
-                    if head == G.startSymbol:
+                    if item.production.Left == G.startSymbol:
                         self._register(self.action, (idx, G.EOF), (self.OK, None))
                     else:
-                        for c in follows[head]:
+                        for c in self._lookaheads(item):
                             self._register(self.action, (idx, c), (self.REDUCE, item.production))
                 else:
                     symbol = item.NextSymbol
@@ -195,6 +196,9 @@ class SLR1Parser(ShiftReduceParser):
     def _register(table, key, value):
         assert key not in table or table[key] == value, 'Shift-Reduce or Reduce-Reduce conflict!!!'
         table[key] = value
+
+    def _lookaheads(self, item):
+        return self.follows[item.production.Left]
 
 
 class LR1Parser(ShiftReduceParser):
@@ -218,7 +222,7 @@ class LR1Parser(ShiftReduceParser):
                     if item.production.Left == G.startSymbol:
                         self._register(self.action, (idx, G.EOF), (self.OK, None))
                     else:
-                        for lookahead in item.lookaheads:
+                        for lookahead in self._lookaheads(item):
                             self._register(self.action, (idx, lookahead), (self.REDUCE, item.production))
                 else:
                     symbol = item.NextSymbol
@@ -232,6 +236,9 @@ class LR1Parser(ShiftReduceParser):
     def _register(table, key, value):
         assert key not in table or table[key] == value, 'Shift-Reduce or Reduce-Reduce conflict!!!'
         table[key] = value
+    
+    def _lookaheads(self, item):
+        return item.lookaheads
 
 
 class LALR1Parser(LR1Parser):
