@@ -1,0 +1,9 @@
+## Folders
+/.idea/
+/.vscode/
+cmp/tools/
+*/__pycache__
+*/.ipynb_checkpoints
+
+## Files
+test.py
