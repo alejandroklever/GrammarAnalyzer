@@ -21,15 +21,15 @@ class Parser:
         return self._G
 
     @property
-    def firsts(self):
+    def Firsts(self):
         return self._firsts
 
     @property
-    def follows(self):
+    def Follows(self):
         return self._follows
 
     @property
-    def table(self):
+    def Table(self):
         return self._table
 
     def _build_parsing_table(self):
@@ -104,17 +104,49 @@ class ShiftReduceParser(Parser):
         self._G = G
         self._firsts = compute_firsts(G)
         self._follows = compute_follows(G, self._firsts)
+        self._augmented_grammar = G.AugmentedGrammar()
+        self._automaton = self._build_automaton()
         self.verbose = verbose
         self.action = {}
         self.goto = {}
         self._build_parsing_table()
 
-    @property
-    def automaton_builder(self):
+    def _build_automaton(self):
         raise NotImplementedError()
 
-    def _build_parsing_table(self):
+    def _lookaheads(self, item):
         raise NotImplementedError()
+
+    @staticmethod
+    def _register(table, key, value):
+        assert key not in table or table[key] == value, 'Shift-Reduce or Reduce-Reduce conflict!!!'
+        table[key] = value
+
+    def _build_parsing_table(self):
+        G = self._augmented_grammar
+        automaton = self._automaton
+
+        for i, node in enumerate(automaton):
+            if self.verbose:
+                print(i, '\t', '\n\t '.join(str(x) for x in node.state), '\n')
+            node.idx = i
+
+        for node in automaton:
+            idx = node.idx
+            for item in node.state:
+                if item.IsReduceItem:
+                    if item.production.Left == G.startSymbol:
+                        self._register(self.action, (idx, G.EOF), (self.OK, None))
+                    else:
+                        for lookahead in self._lookaheads(item):
+                            self._register(self.action, (idx, lookahead), (self.REDUCE, item.production))
+                else:
+                    symbol = item.NextSymbol
+                    idj = node.get(symbol.Name).idx
+                    if symbol.IsTerminal:
+                        self._register(self.action, (idx, symbol), (self.SHIFT, idj))
+                    else:
+                        self._register(self.goto, (idx, symbol), idj)
 
     def __call__(self, tokens, get_ast=False):
         stack = [0]
@@ -162,86 +194,24 @@ class ShiftReduceParser(Parser):
 
 
 class SLR1Parser(ShiftReduceParser):
-    @property
-    def automaton_builder(self):
-        return build_LR0_automaton
-
-    def _build_parsing_table(self):
-        G = self.G.AugmentedGrammar(True)
-
-        automaton = self.automaton_builder(G)
-        for i, node in enumerate(automaton):
-            if self.verbose:
-                print(i, '\t', '\n\t '.join(str(x) for x in node.state), '\n')
-            node.idx = i
-
-        for node in automaton:
-            idx = node.idx
-            for item in node.state:
-                if item.IsReduceItem:
-                    if item.production.Left == G.startSymbol:
-                        self._register(self.action, (idx, G.EOF), (self.OK, None))
-                    else:
-                        for c in self._lookaheads(item):
-                            self._register(self.action, (idx, c), (self.REDUCE, item.production))
-                else:
-                    symbol = item.NextSymbol
-                    idj = node.get(symbol.Name).idx
-                    if symbol.IsTerminal:
-                        self._register(self.action, (idx, symbol), (self.SHIFT, idj))
-                    else:
-                        self._register(self.goto, (idx, symbol), idj)
-
-    @staticmethod
-    def _register(table, key, value):
-        assert key not in table or table[key] == value, 'Shift-Reduce or Reduce-Reduce conflict!!!'
-        table[key] = value
+    def _build_automaton(self):
+        G = self._augmented_grammar
+        return build_LR0_automaton(G)
 
     def _lookaheads(self, item):
-        return self.follows[item.production.Left]
+        return self.Follows[item.production.Left]
 
 
 class LR1Parser(ShiftReduceParser):
-    @property
-    def automaton_builder(self):
-        return build_LR1_automaton
+    def _build_automaton(self):
+        G = self._augmented_grammar
+        return build_LR1_automaton(G, firsts=self.Firsts)
 
-    def _build_parsing_table(self):
-        G = self.G.AugmentedGrammar(True)
-
-        automaton = self.automaton_builder(G, firsts=self.firsts)
-        for i, node in enumerate(automaton):
-            if self.verbose:
-                print(i, '\t', '\n\t '.join(str(x) for x in node.state), '\n')
-            node.idx = i
-
-        for node in automaton:
-            idx = node.idx
-            for item in node.state:
-                if item.IsReduceItem:
-                    if item.production.Left == G.startSymbol:
-                        self._register(self.action, (idx, G.EOF), (self.OK, None))
-                    else:
-                        for lookahead in self._lookaheads(item):
-                            self._register(self.action, (idx, lookahead), (self.REDUCE, item.production))
-                else:
-                    symbol = item.NextSymbol
-                    idj = node.get(symbol.Name).idx
-                    if symbol.IsTerminal:
-                        self._register(self.action, (idx, symbol), (self.SHIFT, idj))
-                    else:
-                        self._register(self.goto, (idx, symbol), idj)
-
-    @staticmethod
-    def _register(table, key, value):
-        assert key not in table or table[key] == value, 'Shift-Reduce or Reduce-Reduce conflict!!!'
-        table[key] = value
-    
     def _lookaheads(self, item):
         return item.lookaheads
 
 
 class LALR1Parser(LR1Parser):
-    @property
-    def automaton_builder(self):
-        return build_LALR1_automaton
+    def _build_automaton(self):
+        G = self._augmented_grammar
+        return build_LALR1_automaton(G, firsts=self.Firsts)
