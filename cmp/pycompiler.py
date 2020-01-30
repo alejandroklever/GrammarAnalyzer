@@ -427,7 +427,7 @@ class Grammar():
     @property
     def IsAugmentedGrammar(self):
         augmented = 0
-        for left, right in self.Productions:
+        for left, _ in self.Productions:
             if self.startSymbol == left:
                 augmented += 1
         if augmented <= 1:
@@ -464,7 +464,7 @@ class Item:
     def __str__(self):
         s = str(self.production.Left) + " -> "
         if len(self.production.Right) > 0:
-            for i, c in enumerate(self.production.Right):
+            for i, _ in enumerate(self.production.Right):
                 if i == self.pos:
                     s += "."
                 s += str(self.production.Right[i])
