@@ -1,8 +1,4 @@
-from cmp.automata import State, multiline_formatter
-from cmp.pycompiler import Grammar, Item
-from cmp.utils import ContainerSet
-
-from .firsts_follows_tools import compute_firsts, compute_follows, compute_local_first
+from .firsts_follows_tools import compute_firsts, compute_follows
 from .lr_automata import build_LR0_automaton, build_LR1_automaton, build_LALR1_automaton
 
 
@@ -16,7 +12,8 @@ class Parser:
     @property
     def G(self):
         """
-        :rtype: Grammar
+        :return:
+            Grammar
         """
         return self._G
 
@@ -101,15 +98,11 @@ class ShiftReduceParser(Parser):
     OK = 'OK'
 
     def __init__(self, G, verbose=False):
-        self._G = G
-        self._firsts = compute_firsts(G)
-        self._follows = compute_follows(G, self._firsts)
         self._augmented_grammar = G.AugmentedGrammar()
         self._automaton = self._build_automaton()
         self.verbose = verbose
-        self.action = {}
-        self.goto = {}
-        self._build_parsing_table()
+        super(ShiftReduceParser, self).__init__(G)
+        self.action, self.goto = self.Table
 
     def _build_automaton(self):
         raise NotImplementedError()
@@ -123,6 +116,13 @@ class ShiftReduceParser(Parser):
         table[key] = value
 
     def _build_parsing_table(self):
+        """
+        Build de parsing table\n
+        :return:\n
+        \tReturn a tuple (action, goto) parsing tables
+        """
+        action = {}
+        goto = {}
         G = self._augmented_grammar
         automaton = self._automaton
 
@@ -136,17 +136,18 @@ class ShiftReduceParser(Parser):
             for item in node.state:
                 if item.IsReduceItem:
                     if item.production.Left == G.startSymbol:
-                        self._register(self.action, (idx, G.EOF), (self.OK, None))
+                        self._register(action, (idx, G.EOF), (self.OK, None))
                     else:
                         for lookahead in self._lookaheads(item):
-                            self._register(self.action, (idx, lookahead), (self.REDUCE, item.production))
+                            self._register(action, (idx, lookahead), (self.REDUCE, item.production))
                 else:
                     symbol = item.NextSymbol
                     idj = node.get(symbol.Name).idx
                     if symbol.IsTerminal:
-                        self._register(self.action, (idx, symbol), (self.SHIFT, idj))
+                        self._register(action, (idx, symbol), (self.SHIFT, idj))
                     else:
-                        self._register(self.goto, (idx, symbol), idj)
+                        self._register(goto, (idx, symbol), idj)
+        return action, goto
 
     def __call__(self, tokens, get_ast=False):
         stack = [0]
