@@ -2,7 +2,7 @@ from cmp.automata import State, multiline_formatter
 from cmp.pycompiler import Item
 from cmp.utils import ContainerSet
 
-from .firsts_follows_tools import compute_firsts, compute_local_first
+from .utils import compute_firsts, compute_local_first
 
 
 ##### SLR AUTOMATA #####
