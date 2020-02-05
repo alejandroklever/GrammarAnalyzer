@@ -1,4 +1,5 @@
 from cmp.utils import ContainerSet
+from pandas import DataFrame
 
 
 def compute_local_first(firsts, alpha):

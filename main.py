@@ -121,10 +121,11 @@ def manual_input_app():
 def main():
     app_option = st.sidebar.selectbox('Choose an option', ('-', 'Manual Input', 'Load From File'), index=0)
 
+
     if app_option == '-':
         st.sidebar.success('Choose an option above')
 
-        st.markdown('''
+        st.markdown(body='''
         # Proyecto de Compilacion
 
         # Grammar Analyzer WebApp
@@ -132,7 +133,6 @@ def main():
         ## Autor: Alejandro Klever Clemente
         
         ## Grupo: C-311''')
-
     elif app_option == 'Manual Input':
         manual_input_app()
     else:

@@ -1,5 +1,6 @@
 from .utils import compute_firsts, compute_follows
 from .lr_automata import build_LR0_automaton, build_LR1_automaton, build_LALR1_automaton
+from pandas import DataFrame
 
 
 class Parser:
@@ -107,6 +108,7 @@ class ShiftReduceParser(Parser):
         self.action = {}
         self.goto = {}
         self._build_parsing_table()
+
 
     def _build_automaton(self):
         raise NotImplementedError()
@@ -217,3 +219,29 @@ class LALR1Parser(LR1Parser):
     def _build_automaton(self):
         G = self._augmented_grammar
         return build_LALR1_automaton(G, firsts=self.Firsts)
+
+
+def encode_value(value):
+    try:
+        action, tag = value
+        if action == ShiftReduceParser.SHIFT:
+            return 'S' + str(tag)
+        elif action == ShiftReduceParser.REDUCE:
+            return repr(tag)
+        elif action ==  ShiftReduceParser.OK:
+            return action
+        else:
+            return value
+    except TypeError:
+        return value
+
+def table_to_dataframe(table):
+    d = {}
+    for (state, symbol), value in table.items():
+        value = encode_value(value)
+        try:
+            d[state][symbol] = value
+        except KeyError:
+            d[state] = { symbol: value }
+
+    return DataFrame.from_dict(d, orient='index', dtype=str)
