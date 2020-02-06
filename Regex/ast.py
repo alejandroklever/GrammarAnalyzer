@@ -19,6 +19,9 @@ class SymbolNode(AtomicNode):
 
     def __str__(self):
         return self.lex
+    
+    def __repr__(self):
+        return self.__str__()
 
 
 class ClosureNode(UnaryNode):
@@ -29,6 +32,8 @@ class ClosureNode(UnaryNode):
     def __str__(self):
         return str(self.node) + '*'
 
+    def __repr__(self):
+        return self.__str__()
 
 class UnionNode(BinaryNode):
     @staticmethod
@@ -38,6 +43,8 @@ class UnionNode(BinaryNode):
     def __str__(self):
         return str(self.left) + "|" + str(self.right)
 
+    def __repr__(self):
+        return self.__str__()
 
 class ConcatNode(BinaryNode):
     @staticmethod
@@ -47,6 +54,8 @@ class ConcatNode(BinaryNode):
     def __str__(self):
         return str(self.left) + str(self.right)
 
+    def __repr__(self):
+        return self.__str__()
 
 class RangeNode(BinaryNode):
     def evaluate(self):
@@ -64,6 +73,8 @@ class RangeNode(BinaryNode):
     def __str__(self):
         return f'{str(self.left)}-{str(self.right)}'
 
+    def __repr__(self):
+        return self.__str__()
 
 class QuestionNode(UnaryNode):
     @staticmethod
@@ -73,6 +84,8 @@ class QuestionNode(UnaryNode):
     def __str__(self):
         return str(self.node) + '?'
 
+    def __repr__(self):
+        return self.__str__()
 
 class PlusNode(UnaryNode):
     @staticmethod
@@ -81,3 +94,6 @@ class PlusNode(UnaryNode):
     
     def __str__(self):
         return str(self.node) + '+'
+
+    def __repr__(self):
+        return self.__str__()

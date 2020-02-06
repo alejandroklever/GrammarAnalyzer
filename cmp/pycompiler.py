@@ -386,7 +386,7 @@ class Grammar():
             productions.append({'Head': head, 'Body': body})
 
         d = {'NonTerminals': [symb.Name for symb in self.nonTerminals],
-             'Terminals': [symb.Name for symb in self.terminals], \
+             'Terminals': [symb.Name for symb in self.terminals],
              'Productions': productions}
 
         # [{'Head':p.Left.Name, "Body": [s.Name for s in p.Right]} for p in self.Productions]

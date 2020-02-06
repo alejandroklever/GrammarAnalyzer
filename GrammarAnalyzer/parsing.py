@@ -12,10 +12,6 @@ class Parser:
 
     @property
     def G(self):
-        """
-        :return:
-            Grammar
-        """
         return self._G
 
     @property
@@ -29,6 +25,10 @@ class Parser:
     @property
     def Table(self):
         return self._table
+
+    @staticmethod
+    def FromTable(table):
+        raise NotImplementedError()
 
     def _build_parsing_table(self):
         raise NotImplementedError()
@@ -109,7 +109,6 @@ class ShiftReduceParser(Parser):
         self.goto = {}
         self._build_parsing_table()
 
-
     def _build_automaton(self):
         raise NotImplementedError()
 
@@ -122,11 +121,6 @@ class ShiftReduceParser(Parser):
         table[key] = value
 
     def _build_parsing_table(self):
-        """
-        Build de parsing table\n
-        :return:\n
-        \tReturn a tuple (action, goto) parsing tables
-        """
         G = self._augmented_grammar
         automaton = self._automaton
 
@@ -234,6 +228,7 @@ def encode_value(value):
             return value
     except TypeError:
         return value
+
 
 def table_to_dataframe(table):
     d = {}
