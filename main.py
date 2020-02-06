@@ -2,7 +2,9 @@ import streamlit as st
 
 from cmp.pycompiler import Grammar
 from cmp.utils import Token, tokenizer
+from cmp.automata import State
 from GrammarAnalyzer import DerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser
+from Regex.regex import Regex
 
 
 ############
@@ -133,6 +135,11 @@ def main():
         ## Autor: Alejandro Klever Clemente
         
         ## Grupo: C-311''')
+
+        regex = Regex("[1-3][0-3]*")
+        state = State.from_nfa(regex.automaton)
+        st.graphviz_chart(str(state.graph()))
+
     elif app_option == 'Manual Input':
         manual_input_app()
     else:

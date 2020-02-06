@@ -15,18 +15,17 @@ class Regex:
     def __call__(self, text):
         return self.automaton.recognize(text)
 
-
     @staticmethod
     def build_automaton(regex, skip_whitespaces=False):
         # G = Regex.Grammar()
-        parser = RegexParser(verbose=True)
+        parser = RegexParser(verbose=False)
         tokens = regex_tokenizer(regex, parser.G, skip_whitespaces=False)
         _, ast = parser(tokens, get_ast=True) # LR1Parser(G)(tokens, get_ast=True)
         nfa = ast.evaluate()
         dfa = DFA.from_nfa(nfa)
-        return DFA.minimize(dfa)
+        dfa = DFA.minimize(dfa)
+        return dfa
     
-
     @staticmethod
     def Grammar():
         G = Grammar()

@@ -102,13 +102,14 @@ def epsilon_closure(automaton, states):
     
     while pending:
         state = pending.pop()
-        symbols = automaton.transitions[state]
-        try:
-            for s in symbols['']:
+        symbols = automaton.epsilon_transitions(state)
+        
+        for s in symbols:
+            if s not in closure:
                 pending.append(s)
                 closure.add(s)
-        except KeyError:
-            continue
+    
+    
                 
     return ContainerSet(*closure)
 
@@ -216,11 +217,15 @@ def automata_closure(a1):
 
     for (origin, symbol), destinations in a1.map.items():
         transitions[origin + d1, symbol] = [d + d1 for d in destinations]  
-
     transitions[start, ''] = [a1.start + d1, final]
+
     for f in a1.finals:
-        transitions[f + d1, ''] = [final]
-    transitions[final, ''] = [start]
+        try:
+            X = transitions[f + d1, '']
+        except KeyError:
+            X = transitions[f + d1, ''] = set()
+        X.add(final)
+        X.add(a1.start + d1)
 
     states = a1.states +  2
     finals = { final }
