@@ -56,7 +56,7 @@ def manual_input_app():
     # Start Symbol, Non terminal & terminals Input #
     ################################################
     start_symbol = st.sidebar.text_input('Simbolo inicial: ', value="E")
-    input_nonterminals = st.sidebar.text_input('No Terminales :', value="T F X Y")
+    input_nonterminals = st.sidebar.text_input('No Terminales :', value="T F")
     input_terminals = st.sidebar.text_input('Terminales :', value="+ - * / ( ) num")
     show_grammar = st.sidebar.checkbox('Show Grammar')
 
@@ -81,7 +81,7 @@ def manual_input_app():
     ###################
     # Get Productions #
     ###################
-    input_productions = st.text_area('Producciones :', value=example_productions_2)
+    input_productions = st.text_area('Producciones :', value=example_productions)
 
 
     nonterminals_variables = ', '.join(input_nonterminals.split())
@@ -121,12 +121,11 @@ def manual_input_app():
         radio = st.sidebar.radio("Parsing Data:", ("Show Derivation Tree", "Show Automata", "Run Examples"))
         if radio == 'Show Derivation Tree':
             [repr(d) for d in derivation]
-            st.graphviz_chart(str(DerivationTree(derivation).graph()))
+            st.graphviz_chart(str(DerivationTree(derivation, parser_type in ('SLR(1)', 'LR(1)', 'LALR(1)')).graph()))
     
 
 def main():
     app_option = st.sidebar.selectbox('Choose an option', ('-', 'Manual Input', 'Load From File'), index=0)
-
 
     if app_option == '-':
         st.sidebar.success('Choose an option above')

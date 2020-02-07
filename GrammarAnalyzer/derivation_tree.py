@@ -1,13 +1,6 @@
 import pydot
 
 
-def node_to_str(node, depth):
-    s = '    ' * depth + ('\\__' if depth != 0 else '') + f'({str(node.symbol)})' + '\n'
-    for child in node.childs:
-        s += node_to_str(child, depth + 1)
-    return s
-
-
 class DerivationTreeNode:
     def __init__(self, symbol, father=None):
         self.symbol = symbol
@@ -19,24 +12,24 @@ class DerivationTreeNode:
         return self.childs[-1]
 
     def go_root(self):
-        node = self
-        while node.father != None:
-            node = node.father
-        return node
+        return self if self.father is None else self.father.go_root()
 
     def __str__(self):
         return str(self.symbol)
 
+
 class DerivationTree:
-    def __init__(self, productions):
-        self.root = self._build_tree(productions)
+    def __init__(self, productions, is_lr=False):
+        self.root = self._build_tree(productions, is_lr)
 
-    def _build_tree(self, productions):
-        iter_productions = iter(productions)
-        root = self._expand_tree(iter_productions)
-        return root
+    def _build_tree(self, productions, is_lr):
+        p = productions if not is_lr else reversed(productions)
+        iter_productions = iter(p)
+        if is_lr:
+            return self._extreme_right_derivation(iter_productions)
+        return self._extreme_left_derivation(productions)
 
-    def _expand_tree(self, productions, node=None):
+    def _extreme_left_derivation(self, productions, node=None):
         try:
             head, body = next(productions)
         except StopIteration:
@@ -52,7 +45,27 @@ class DerivationTree:
                 node.add_child(symbol)
             elif symbol.IsNonTerminal:
                 next_node = node.add_child(symbol)
-                self._expand_tree(productions, next_node)
+                self._extreme_left_derivation(productions, next_node)
+        return node
+
+    def _extreme_right_derivation(self, productions, node=None):
+        try:
+            head, body = next(productions)
+        except StopIteration:
+            return node.go_root()
+
+        if node is None:
+            node = DerivationTreeNode(head)
+
+        assert node.symbol == head
+
+        for symbol in reversed(body):
+            if symbol.IsTerminal:
+                node.add_child(symbol)
+            elif symbol.IsNonTerminal:
+                next_node = node.add_child(symbol)
+                self._extreme_right_derivation(productions, next_node)
+        node.childs.reverse()
         return node
 
     def graph(self):
