@@ -22,6 +22,12 @@ example_productions = """E %= E + plus + T | T | E + minus + T
 T %= T + star + F | F | T + div + F
 F %= num | opar + E + cpar"""
 
+example_productions_2 = """E %= T + X
+X %= plus + T + X | minus + T + X | G.Epsilon
+T %= F + Y
+Y %= star + F + Y | div + F + Y | G.Epsilon
+F %= num | opar + E + cpar"""
+
 ################
 # Declarations #
 ################
@@ -50,7 +56,7 @@ def manual_input_app():
     # Start Symbol, Non terminal & terminals Input #
     ################################################
     start_symbol = st.sidebar.text_input('Simbolo inicial: ', value="E")
-    input_nonterminals = st.sidebar.text_input('No Terminales :', value="T F")
+    input_nonterminals = st.sidebar.text_input('No Terminales :', value="T F X Y")
     input_terminals = st.sidebar.text_input('Terminales :', value="+ - * / ( ) num")
     show_grammar = st.sidebar.checkbox('Show Grammar')
 
@@ -75,7 +81,7 @@ def manual_input_app():
     ###################
     # Get Productions #
     ###################
-    input_productions = st.text_area('Producciones :', value=example_productions)
+    input_productions = st.text_area('Producciones :', value=example_productions_2)
 
 
     nonterminals_variables = ', '.join(input_nonterminals.split())
@@ -114,10 +120,8 @@ def manual_input_app():
 
         radio = st.sidebar.radio("Parsing Data:", ("Show Derivation Tree", "Show Automata", "Run Examples"))
         if radio == 'Show Derivation Tree':
-            st.subheader('Left Parse:')
-            [repr(x) for x in derivation]
-            st.subheader('Firsts:')
-            {repr(k): repr(v) for k, v in parser.Firsts.items()}
+            [repr(d) for d in derivation]
+            st.graphviz_chart(str(DerivationTree(derivation).graph()))
     
 
 def main():
@@ -126,20 +130,14 @@ def main():
 
     if app_option == '-':
         st.sidebar.success('Choose an option above')
-
-        st.markdown(body='''
+        st.markdown(body="""
         # Proyecto de Compilacion
 
         # Grammar Analyzer WebApp
 
         ## Autor: Alejandro Klever Clemente
-        
-        ## Grupo: C-311''')
 
-        regex = Regex("[1-3][0-3]*")
-        state = State.from_nfa(regex.automaton)
-        st.graphviz_chart(str(state.graph()))
-
+        ## Grupo: C-311""")
     elif app_option == 'Manual Input':
         manual_input_app()
     else:

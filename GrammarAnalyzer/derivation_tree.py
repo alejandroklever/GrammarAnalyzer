@@ -25,7 +25,7 @@ class DerivationTreeNode:
         return node
 
     def __str__(self):
-        return node_to_str(self, 0)
+        return str(self.symbol)
 
 class DerivationTree:
     def __init__(self, productions):
@@ -56,10 +56,25 @@ class DerivationTree:
         return node
 
     def graph(self):
-        G = pydot.Dot(graph_type='graph')
-        for child in self.root.childs:
-            edge = pydot.Edge(str(self.root.symbol), str(child.symbol))
-            G.add_edge(edge)
+        G = pydot.Dot(graph_type='graph', rankdir='TD', margin=0.1)
+        stack = [self.root]
+        
+        while stack:
+            current = stack.pop()
+            ids = id(current)
+            G.add_node(pydot.Node(name=ids, label=str(current), shape='circle'))
+            for child in current.childs:
+                stack.append(child)
+                G.add_node(pydot.Node(name=id(child), label=str(child), shape='circle'))
+                G.add_edge(pydot.Edge(ids, id(child)))
+        
+        return G
+    
+    def _repr_svg_(self):
+        try:
+            return self.graph().create_svg().decode('utf8')
+        except:
+            pass
 
     def __str__(self):
         return str(self.root)

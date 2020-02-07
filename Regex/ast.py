@@ -35,6 +35,7 @@ class ClosureNode(UnaryNode):
     def __repr__(self):
         return self.__str__()
 
+
 class UnionNode(BinaryNode):
     @staticmethod
     def operate(lvalue, rvalue):
@@ -46,6 +47,7 @@ class UnionNode(BinaryNode):
     def __repr__(self):
         return self.__str__()
 
+
 class ConcatNode(BinaryNode):
     @staticmethod
     def operate(lvalue, rvalue):
@@ -56,6 +58,7 @@ class ConcatNode(BinaryNode):
 
     def __repr__(self):
         return self.__str__()
+
 
 class RangeNode(BinaryNode):
     def evaluate(self):
@@ -75,6 +78,7 @@ class RangeNode(BinaryNode):
 
     def __repr__(self):
         return self.__str__()
+
 
 class QuestionNode(UnaryNode):
     @staticmethod

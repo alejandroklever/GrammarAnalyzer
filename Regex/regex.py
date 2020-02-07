@@ -17,10 +17,9 @@ class Regex:
 
     @staticmethod
     def build_automaton(regex, skip_whitespaces=False):
-        # G = Regex.Grammar()
         parser = RegexParser(verbose=False)
         tokens = regex_tokenizer(regex, parser.G, skip_whitespaces=False)
-        _, ast = parser(tokens, get_ast=True) # LR1Parser(G)(tokens, get_ast=True)
+        _, ast = parser(tokens, get_ast=True)
         nfa = ast.evaluate()
         dfa = DFA.from_nfa(nfa)
         dfa = DFA.minimize(dfa)
