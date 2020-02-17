@@ -1,7 +1,8 @@
 ## Folders
-/.idea/
-/.vscode/
+.idea/
+.vscode/
 cmp/tools/
+resources
 */__pycache__
 */.ipynb_checkpoints
 

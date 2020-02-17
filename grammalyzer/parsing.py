@@ -1,68 +1,61 @@
+from enum import auto, Enum
+
 from .utils import compute_firsts, compute_follows
-from .lr_automata import build_LR0_automaton, build_LR1_automaton, build_LALR1_automaton
+from .automatas import build_LR0_automaton, build_LR1_automaton, build_LALR1_automaton
 from pandas import DataFrame
 
 
 class Parser:
-    def __init__(self, G):
-        self._G = G
-        self._firsts = compute_firsts(G)
-        self._follows = compute_follows(G, self._firsts)
-        self._table = self._build_parsing_table()
-
-    @property
-    def G(self):
-        return self._G
-
-    @property
-    def Firsts(self):
-        return self._firsts
-
-    @property
-    def Follows(self):
-        return self._follows
-
-    @property
-    def Table(self):
-        return self._table
-
-    @staticmethod
-    def FromTable(table):
-        raise NotImplementedError()
-
     def _build_parsing_table(self):
         raise NotImplementedError()
 
 
 class LL1Parser(Parser):
-    def _build_parsing_table(self):
-        G = self._G
-        firsts = self._firsts
-        follows = self._follows
-        parsing_table = {}
+    def __init__(self, G):
+        self.G = G
+        self.firsts = compute_firsts(G)
+        self.follows = compute_follows(G, self.firsts)
+        self.build_parser_error = False
+        self.conflict = (None, None)
+        self.table = self._build_parsing_table()
 
+    def _build_parsing_table(self):
+        G = self.G
+        firsts = self.firsts
+        follows = self.follows
+        parsing_table = {}
+        valid_table = True
         # P: X -> alpha
         for production in G.Productions:
-            X = production.Left
-            alpha = production.Right
+            head, body = production
 
-            contains_epsilon = firsts[alpha].contains_epsilon
+            contains_epsilon = firsts[body].contains_epsilon
 
             # working with symbols on First(alpha) ...
             if not contains_epsilon:
-                for symbol in firsts[alpha]:
-                    parsing_table[X, symbol] = [production]
+                for symbol in firsts[body]:
+                    try:
+                        parsing_table[head, symbol].append(production)
+                        self._build_parser_error = True
+                        self._conflict = (head, symbol)
+                    except KeyError:
+                        parsing_table[head, symbol] = [production]
             # working with epsilon...
             else:
-                for symbol in follows[X]:
-                    parsing_table[X, symbol] = [production]
+                for symbol in follows[head]:
+                    try:
+                        parsing_table[head, symbol].append(production)
+                        self._build_parser_error = True
+                        self._conflict = (head, symbol)
+                    except KeyError:
+                        parsing_table[head, symbol] = [production]
 
         # parsing table is ready!!!
-        return parsing_table
+        return parsing_table, valid_table
 
     def __call__(self, tokens):
-        G = self._G
-        table = self._table
+        G = self.G
+        table = self.table
 
         stack = [G.startSymbol]
         cursor = 0
@@ -99,35 +92,32 @@ class ShiftReduceParser(Parser):
     OK = 'OK'
 
     def __init__(self, G, verbose=False):
-        self._G = G
-        self._augmented_grammar = G.AugmentedGrammar(True)
-        self._firsts = compute_firsts(self._augmented_grammar)
-        self._follows = compute_follows(G, self._firsts)
-        self._automaton = self._build_automaton()
+        self.G = G
+        self.augmented_G = G.AugmentedGrammar(True)
+        self.firsts = compute_firsts(self.augmented_G)
+        self.follows = compute_follows(self.augmented_G, self.firsts)
+        self.automaton = self._build_automaton()
+        self.state_dict = {}
+        self.build_parser_error = False
+        self.conflict = (None, None)
+
         self.verbose = verbose
         self.action = {}
         self.goto = {}
         self._build_parsing_table()
 
-    def _build_automaton(self):
-        raise NotImplementedError()
-
-    def _lookaheads(self, item):
-        raise NotImplementedError()
-
-    @staticmethod
-    def _register(table, key, value):
-        assert key not in table or table[key] == value, 'Shift-Reduce or Reduce-Reduce conflict!!!'
-        table[key] = value
+        if not self.build_parser_error:
+            self._clean_tables()
 
     def _build_parsing_table(self):
-        G = self._augmented_grammar
-        automaton = self._automaton
+        G = self.augmented_G
+        automaton = self.automaton
 
         for i, node in enumerate(automaton):
             if self.verbose:
                 print(i, '\t', '\n\t '.join(str(x) for x in node.state), '\n')
             node.idx = i
+            self.state_dict[i] = node
 
         for node in automaton:
             idx = node.idx
@@ -168,7 +158,7 @@ class ShiftReduceParser(Parser):
                 output.append(tag)
 
                 head, body = tag
-                
+
                 try:
                     attribute = tag.attributes[0]  # La gramatica es atributada
                 except AttributeError:
@@ -178,7 +168,7 @@ class ShiftReduceParser(Parser):
                 for i, symbol in enumerate(reversed(body), 1):
                     stack.pop()
                     syn[-i] = stack.pop()
-                    assert symbol == stack.pop(), 'Bad Reduce'
+                    assert symbol == stack.pop(), 'Bad Reduce...'
                 syn[0] = attribute(syn) if attribute is not None else None
 
                 state = stack[-1]
@@ -190,20 +180,41 @@ class ShiftReduceParser(Parser):
             else:
                 raise Exception('Parsing error...')
 
+    def _register(self, table, key, value):
+        # assert key not in table or table[key] == value, 'Shift-Reduce or Reduce-Reduce conflict!!!'
+        try:
+            n = len(table[key])
+            table[key].add(value)
+            if not self.build_parser_error and n != len(table[key]):
+                self.build_parser_error = True
+                self.conflict = (table, key)
+        except KeyError:
+            table[key] = {value}
+
+    def _clean_tables(self):
+        for key in self.action:
+            self.action[key] = self.action[key].pop()
+        for key in self.goto:
+            self.goto[key] = self.goto[key].pop()
+
+    def _build_automaton(self):
+        raise NotImplementedError()
+
+    def _lookaheads(self, item):
+        raise NotImplementedError()
+
 
 class SLR1Parser(ShiftReduceParser):
     def _build_automaton(self):
-        G = self._augmented_grammar
-        return build_LR0_automaton(G)
+        return build_LR0_automaton(self.augmented_G)
 
     def _lookaheads(self, item):
-        return self.Follows[item.production.Left]
+        return self.follows[item.production.Left]
 
 
 class LR1Parser(ShiftReduceParser):
     def _build_automaton(self):
-        G = self._augmented_grammar
-        return build_LR1_automaton(G, firsts=self.Firsts)
+        return build_LR1_automaton(self.augmented_G, firsts=self.firsts)
 
     def _lookaheads(self, item):
         return item.lookaheads
@@ -211,8 +222,7 @@ class LR1Parser(ShiftReduceParser):
 
 class LALR1Parser(LR1Parser):
     def _build_automaton(self):
-        G = self._augmented_grammar
-        return build_LALR1_automaton(G, firsts=self.Firsts)
+        return build_LALR1_automaton(self.augmented_G, firsts=self.firsts)
 
 
 def encode_value(value):
@@ -222,7 +232,7 @@ def encode_value(value):
             return 'S' + str(tag)
         elif action == ShiftReduceParser.REDUCE:
             return repr(tag)
-        elif action ==  ShiftReduceParser.OK:
+        elif action == ShiftReduceParser.OK:
             return action
         else:
             return value
@@ -237,6 +247,6 @@ def table_to_dataframe(table):
         try:
             d[state][symbol] = value
         except KeyError:
-            d[state] = { symbol: value }
+            d[state] = {symbol: value}
 
     return DataFrame.from_dict(d, orient='index', dtype=str)

@@ -82,11 +82,12 @@ class DerivationTree:
                 G.add_edge(pydot.Edge(ids, id(child)))
         
         return G
-    
+
+    # noinspection PyUnresolvedReferences
     def _repr_svg_(self):
         try:
             return self.graph().create_svg().decode('utf8')
-        except:
+        except AttributeError:
             pass
 
     def __str__(self):

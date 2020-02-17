@@ -111,9 +111,8 @@ class Terminal(Symbol):
 
 
 class EOF(Terminal):
-
-    def __init__(self, Grammar):
-        super().__init__('$', Grammar)
+    def __init__(self, G):
+        super().__init__('$', G)
 
 
 class Sentence(object):
@@ -166,7 +165,7 @@ class Sentence(object):
         return False
 
 
-class SentenceList(object):
+class SentenceList:
 
     def __init__(self, *args):
         self._sentences = list(args)
@@ -275,7 +274,7 @@ class AttributeProduction(Production):
         pass
 
 
-class Grammar():
+class Grammar:
 
     def __init__(self):
 
