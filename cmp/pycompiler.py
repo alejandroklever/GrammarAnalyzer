@@ -219,7 +219,7 @@ class Epsilon(Terminal, Sentence):
         return True
 
 
-class Production(object):
+class Production:
 
     def __init__(self, nonTerminal, sentence):
         self.Left = nonTerminal
@@ -275,9 +275,7 @@ class AttributeProduction(Production):
 
 
 class Grammar:
-
     def __init__(self):
-
         self.Productions = []
         self.nonTerminals = []
         self.terminals = []
