@@ -15,7 +15,7 @@ class LL1Parser(Parser):
         self.G = G
         self.firsts = compute_firsts(G)
         self.follows = compute_follows(G, self.firsts)
-        self.build_parser_error = False
+        self.ParserConstructionError = False
         self.conflict = (None, None)
         self.table = self._build_parsing_table()
 
@@ -24,7 +24,7 @@ class LL1Parser(Parser):
         firsts = self.firsts
         follows = self.follows
         parsing_table = {}
-        valid_table = True
+
         # P: X -> alpha
         for production in G.Productions:
             head, body = production
@@ -36,8 +36,8 @@ class LL1Parser(Parser):
                 for symbol in firsts[body]:
                     try:
                         parsing_table[head, symbol].append(production)
-                        self._build_parser_error = True
-                        self._conflict = (head, symbol)
+                        self.ParserConstructionError = True
+                        self.conflict = (head, symbol)
                     except KeyError:
                         parsing_table[head, symbol] = [production]
             # working with epsilon...
@@ -45,13 +45,13 @@ class LL1Parser(Parser):
                 for symbol in follows[head]:
                     try:
                         parsing_table[head, symbol].append(production)
-                        self._build_parser_error = True
-                        self._conflict = (head, symbol)
+                        self.ParserConstructionError = True
+                        self.conflict = (head, symbol)
                     except KeyError:
                         parsing_table[head, symbol] = [production]
 
         # parsing table is ready!!!
-        return parsing_table, valid_table
+        return parsing_table
 
     def __call__(self, tokens):
         G = self.G

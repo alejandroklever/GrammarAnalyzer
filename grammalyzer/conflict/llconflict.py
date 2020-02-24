@@ -92,7 +92,7 @@ def shortest_production_path(G: Grammar, x: NonTerminal):
 
 class LLConflictStringGenerator:
     def __init__(self, parser: LL1Parser):
-        assert parser.build_parser_error, 'Expected parser with conflict...'
+        assert parser.ParserConstructionError, 'Expected parser with conflict...'
         self.G = parser.G
         self.table = parser.table
         self.key = parser.conflict
