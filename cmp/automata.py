@@ -1,6 +1,6 @@
 try:
     import pydot
-except:
+except ModuleNotFoundError:
     pass
 
 
@@ -36,7 +36,7 @@ class State:
     def add_transition(self, symbol, state):
         try:
             self.transitions[symbol].append(state)
-        except:
+        except KeyError:
             self.transitions[symbol] = [state]
         return self
 
@@ -104,9 +104,9 @@ class State:
     def epsilon_closure_by_state(*states):
         closure = {state for state in states}
 
-        l = 0
-        while l != len(closure):
-            l = len(closure)
+        n = 0
+        while n != len(closure):
+            n = len(closure)
             tmp = [s for s in closure]
             for s in tmp:
                 for epsilon_state in s.epsilon_transitions:

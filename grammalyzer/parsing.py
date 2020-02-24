@@ -98,7 +98,7 @@ class ShiftReduceParser(Parser):
         self.follows = compute_follows(self.augmented_G, self.firsts)
         self.automaton = self._build_automaton()
         self.state_dict = {}
-        self.build_parser_error = False
+        self.ParserConstructionError = False
         self.conflict = (None, None)
 
         self.verbose = verbose
@@ -106,7 +106,7 @@ class ShiftReduceParser(Parser):
         self.goto = {}
         self._build_parsing_table()
 
-        if not self.build_parser_error:
+        if not self.ParserConstructionError:
             self._clean_tables()
 
     def _build_parsing_table(self):
@@ -185,8 +185,8 @@ class ShiftReduceParser(Parser):
         try:
             n = len(table[key])
             table[key].add(value)
-            if not self.build_parser_error and n != len(table[key]):
-                self.build_parser_error = True
+            if not self.ParserConstructionError and n != len(table[key]):
+                self.ParserConstructionError = True
                 self.conflict = (table, key)
         except KeyError:
             table[key] = {value}

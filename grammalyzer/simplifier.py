@@ -56,7 +56,7 @@ def delete_inmidiate_left_recursion(G: Grammar):
     # Algoritmo para eliminar la recursion izquierda inmediata
     # Seria conveniente adaptarlo para que funciona sin crar una gramatica nueva pero en un principio es funcional
     Gnew = Grammar()
-    Gnew.terminals = G.terminals.copy()
+    Gnew.terminals = G.terminals
 
     for nonterminal in G.nonTerminals:
         for production in nonterminal.productions:
