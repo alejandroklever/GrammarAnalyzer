@@ -6,7 +6,7 @@ from pandas import DataFrame
 from cmp.pycompiler import Grammar
 from cmp.utils import Token, tokenizer
 from examples import (AritmethicStartSymbol, AritmethicNonTerminalsLR, AritmethicTerminals, AritmethicProductionsLR,
-                      AritmethicAliases)
+                      AritmethicAliases, EqualityAliases, EqualityProductions, EqualityNonTerminalsLR, EqualityTerminals, EqualityStartSymbol)
 from grammalyzer import (DerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser, Lexer,
                          delete_common_prefix, delete_inmidiate_left_recursion, clean_grammar)
 from grammalyzer.conflict import LLConflictStringGenerator, LRConflictStringGenerator
@@ -120,7 +120,7 @@ def terminals_input_control(option, options, input_terminals):
 
     st.title('Grammar Analyzer App')
     if option != 'terminal id':
-        aliases = st.text_area('Alias de los terminales: ', value=AritmethicAliases)
+        aliases = st.text_area('Alias de los terminales: ', value=EqualityAliases)
 
         if aliases:
             aliases = [tuple(s.split()) for s in aliases.split('\n')]
@@ -204,16 +204,16 @@ def manual_input_app():
     ################################################
     # Start Symbol, Non terminal & terminals Input #
     ################################################
-    start_symbol = st.sidebar.text_input('Simbolo inicial: ', value=AritmethicStartSymbol)
-    input_nonterminals = st.sidebar.text_input('No Terminales :', value=AritmethicNonTerminalsLR)
-    input_terminals = st.sidebar.text_input('Terminales :', value=AritmethicTerminals)
+    start_symbol = st.sidebar.text_input('Simbolo inicial: ', value=EqualityStartSymbol)
+    input_nonterminals = st.sidebar.text_input('No Terminales :', value=EqualityNonTerminalsLR)
+    input_terminals = st.sidebar.text_input('Terminales :', value=EqualityTerminals)
 
     terminals_id, terminals_regex = terminals_input_control(option, options, input_terminals)
 
     ###################
     # Get Productions #
     ###################
-    input_productions = st.text_area('Producciones :', value=AritmethicProductionsLR)
+    input_productions = st.text_area('Producciones :', value=EqualityProductions)
 
     nonterminals_variables = ', '.join(input_nonterminals.split())
     terminal_variables = ', '.join(terminals_id[term] for term in input_terminals.split())

@@ -75,7 +75,7 @@ def sentence_path(init, conflict_state, symbol, production):
     return lpath + rpath[1:]
 
 
-def expand_path(init, path):
+def expand_path(init, path, follows):
     i = -2
     table = {s: set(s.state) for s in init}
 
@@ -91,15 +91,22 @@ def expand_path(init, path):
 
         reductors = [item for item in current.state if item.production.Left == current and item in table[current]]
 
-        reductor = reductors.pop()
+        while reductors:
+            reductor = reductors.pop()
 
-        table[current].remove(reductor)
+            subpath = guided_path(current, reductor.production.Right)
 
-        subpath = guided_path(current, reductor.production.Right)
+            last = subpath.pop()
+            ritem = [item for item in last.state if item.IsReduceItem and item.production == reductor.production][0]
+            if not ritem.lookaheads:
+                lookaheads = follows[ritem.Left]
+            else:
+                lookaheads = ritem.lookaheads
 
-        last = subpath.pop()
-
-        path = path[:i] + subpath + path[i + 2:]
+            if lookahead in lookaheads:
+                table[current].remove(reductor)
+                path = path[:i] + subpath + path[i + 2:]
+                break
 
     return Sentence(*[s for s in path if not isinstance(s, State)])
 
@@ -116,4 +123,4 @@ class LRConflictStringGenerator:
 
         self.production = production
         self.conflict = parser.conflict
-        self.path = expand_path(init, path)
+        self.path = expand_path(init, path, parser.follows)
