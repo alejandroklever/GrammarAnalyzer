@@ -1,12 +1,10 @@
 from collections import deque
-from enum import Enum, auto
-from typing import List
 
 from cmp.automata import State
-from cmp.pycompiler import Production
+from cmp.pycompiler import Sentence
 
 
-def path_from(state: State):
+def path_from(state):
     queue = deque([state])
 
     parents = {state: None}
@@ -28,7 +26,7 @@ def path_from(state: State):
     return parents
 
 
-def path_from_to(source: State, dest: State):
+def path_from_to(source, dest):
     path = [dest]
     parents = path_from(source)
 
@@ -51,7 +49,7 @@ def guided_path(source, guide):
     return path
 
 
-def reduce(state: State, production: Production, state_list: List[State], lookahead):
+def reduce(state, production, state_list, lookahead):
     states = {state}
     stack = list(production.Right)
 
@@ -70,18 +68,52 @@ def reduce(state: State, production: Production, state_list: List[State], lookah
     return path
 
 
-def sentence_path(init_state: State, conflict_state: State, production: Production):
-    states = [s for s in init_state]
-    rpath = reduce(conflict_state, production, states, None)
-    lpath = path_from_to(init_state, rpath[0])
+def sentence_path(init, conflict_state, symbol, production):
+    states = [s for s in init]
+    rpath = reduce(conflict_state, production, states, symbol)
+    lpath = path_from_to(init, rpath[0])
     return lpath + rpath[1:]
 
 
-class ConflictType(Enum):
-    ReduceReduce = auto()
-    ShiftReduce = auto()
+def expand_path(init, path):
+    i = -2
+    table = {s: set(s.state) for s in init}
+
+    lookahead = path[-1]
+    while i >= -len(path):
+        current = path[i]
+        symbol = path[i + 1]
+
+        if symbol.IsTerminal:
+            lookahead = symbol
+            i -= 2
+            continue
+
+        reductors = [item for item in current.state if item.production.Left == current and item in table[current]]
+
+        reductor = reductors.pop()
+
+        table[current].remove(reductor)
+
+        subpath = guided_path(current, reductor.production.Right)
+
+        last = subpath.pop()
+
+        path = path[:i] + subpath + path[i + 2:]
+
+    return Sentence(*[s for s in path if not isinstance(s, State)])
 
 
 class LRConflictStringGenerator:
-    def __init__(self):
-        pass
+    def __init__(self, parser):
+        assert parser.conflict is not None, 'Expected parser with conflict...'
+        stateID = parser.state_dict
+        state = parser.conflict.state
+        symbol = parser.conflict.symbol
+        init = parser.automaton
+        _, production = parser.action[state, symbol].pop()
+        path = sentence_path(init, stateID[state], symbol, production)
+
+        self.production = production
+        self.conflict = parser.conflict
+        self.path = expand_path(init, path)

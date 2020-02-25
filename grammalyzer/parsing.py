@@ -5,18 +5,44 @@ from .automatas import build_LR0_automaton, build_LR1_automaton, build_LALR1_aut
 from pandas import DataFrame
 
 
-class Parser:
-    def _build_parsing_table(self):
-        raise NotImplementedError()
+class LRConflictType(Enum):
+    ReduceReduce = auto()
+    ShiftReduce = auto()
 
 
-class LL1Parser(Parser):
+class LRConflict:
+    def __init__(self, state, symbol, ctype):
+        self.state = state
+        self.symbol = symbol
+        self.cType = ctype
+
+    def __iter__(self):
+        yield self.state
+        yield self.symbol
+
+
+class LLConflictType(Enum):
+    FirstFirst = auto()
+    FollowFollow = auto()
+
+
+class LLConflict:
+    def __init__(self, nontermial, terminal, ctype):
+        self.nonterminal = nontermial
+        self.terminal = terminal
+        self.cType = ctype
+
+    def __iter__(self):
+        yield self.nonterminal
+        yield self.terminal
+
+
+class LL1Parser:
     def __init__(self, G):
         self.G = G
         self.firsts = compute_firsts(G)
         self.follows = compute_follows(G, self.firsts)
-        self.ParserConstructionError = False
-        self.conflict = (None, None)
+        self.conflict = None
         self.table = self._build_parsing_table()
 
     def _build_parsing_table(self):
@@ -36,8 +62,7 @@ class LL1Parser(Parser):
                 for symbol in firsts[body]:
                     try:
                         parsing_table[head, symbol].append(production)
-                        self.ParserConstructionError = True
-                        self.conflict = (head, symbol)
+                        self.conflict = LLConflict(head, symbol, LLConflictType.FirstFirst)
                     except KeyError:
                         parsing_table[head, symbol] = [production]
             # working with epsilon...
@@ -45,8 +70,7 @@ class LL1Parser(Parser):
                 for symbol in follows[head]:
                     try:
                         parsing_table[head, symbol].append(production)
-                        self.ParserConstructionError = True
-                        self.conflict = (head, symbol)
+                        self.conflict = LLConflict(head, symbol, LLConflictType.FollowFollow)
                     except KeyError:
                         parsing_table[head, symbol] = [production]
 
@@ -86,7 +110,7 @@ class LL1Parser(Parser):
         return output
 
 
-class ShiftReduceParser(Parser):
+class ShiftReduceParser:
     SHIFT = 'SHIFT'
     REDUCE = 'REDUCE'
     OK = 'OK'
@@ -98,15 +122,14 @@ class ShiftReduceParser(Parser):
         self.follows = compute_follows(self.augmented_G, self.firsts)
         self.automaton = self._build_automaton()
         self.state_dict = {}
-        self.ParserConstructionError = False
-        self.conflict = (None, None)
+        self.conflict = None
 
         self.verbose = verbose
         self.action = {}
         self.goto = {}
         self._build_parsing_table()
 
-        if not self.ParserConstructionError:
+        if self.conflict is None:
             self._clean_tables()
 
     def _build_parsing_table(self):
@@ -185,9 +208,16 @@ class ShiftReduceParser(Parser):
         try:
             n = len(table[key])
             table[key].add(value)
-            if not self.ParserConstructionError and n != len(table[key]):
-                self.ParserConstructionError = True
-                self.conflict = (table, key)
+            if self.conflict is None and n != len(table[key]):
+                if all(action == self.REDUCE for action, _ in list(table[key])[:2]):
+                    cType = LRConflictType.ReduceReduce
+                else:
+                    cType = LRConflictType.ShiftReduce
+
+                self.conflict = LRConflict(key[0], key[1], cType)
+                self.conflict.value1 = list(table[key])[0]
+                self.conflict.value2 = list(table[key])[1]
+
         except KeyError:
             table[key] = {value}
 
@@ -223,30 +253,3 @@ class LR1Parser(ShiftReduceParser):
 class LALR1Parser(LR1Parser):
     def _build_automaton(self):
         return build_LALR1_automaton(self.augmented_G, firsts=self.firsts)
-
-
-def encode_value(value):
-    try:
-        action, tag = value
-        if action == ShiftReduceParser.SHIFT:
-            return 'S' + str(tag)
-        elif action == ShiftReduceParser.REDUCE:
-            return repr(tag)
-        elif action == ShiftReduceParser.OK:
-            return action
-        else:
-            return value
-    except TypeError:
-        return value
-
-
-def table_to_dataframe(table):
-    d = {}
-    for (state, symbol), value in table.items():
-        value = encode_value(value)
-        try:
-            d[state][symbol] = value
-        except KeyError:
-            d[state] = {symbol: value}
-
-    return DataFrame.from_dict(d, orient='index', dtype=str)

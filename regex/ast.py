@@ -1,8 +1,8 @@
 from cmp.ast import UnaryNode, BinaryNode, AtomicNode
 from .automata import DFA, automata_closure, automata_concatenation, automata_union
 
-
 EPSILON = 'ε'
+
 
 class EpsilonNode(AtomicNode):
     def evaluate(self):
@@ -19,9 +19,9 @@ class SymbolNode(AtomicNode):
 
     def __str__(self):
         return self.lex
-    
+
     def __repr__(self):
-        return self.__str__()
+        return str(self)
 
 
 class ClosureNode(UnaryNode):
@@ -33,7 +33,7 @@ class ClosureNode(UnaryNode):
         return str(self.node) + '*'
 
     def __repr__(self):
-        return self.__str__()
+        return str(self)
 
 
 class UnionNode(BinaryNode):
@@ -84,18 +84,19 @@ class QuestionNode(UnaryNode):
     @staticmethod
     def operate(value):
         return automata_union(value, EpsilonNode(EPSILON).evaluate())
-    
+
     def __str__(self):
         return str(self.node) + '?'
 
     def __repr__(self):
         return self.__str__()
 
+
 class PlusNode(UnaryNode):
     @staticmethod
     def operate(value):
         return automata_concatenation(value, automata_closure(value))
-    
+
     def __str__(self):
         return str(self.node) + '+'
 

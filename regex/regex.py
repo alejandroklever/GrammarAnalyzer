@@ -66,7 +66,7 @@ class RegexParser(ShiftReduceParser):
         G.NonTerminals('T F A L')
         G.Terminals('| * ( ) symbol ε [ ] - + ?')
 
-        self._G = G
+        self.G = G
         self.verbose = verbose
         self.action = self.action_table()
         self.goto = self.goto_table()

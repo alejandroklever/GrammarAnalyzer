@@ -266,206 +266,39 @@ def add_production(nonterminal, sentence, dic, queue, enqueue):
             queue.append(nonterminal.productions[-1])
 
 
-#####################
-# Deprecated method #
-#####################
-# def deprecated_delete_common_prefix(G: Grammar):
-#     # Algoritmo para eliminar los prefijos comunes de las producciones con la misma cabecera
-#     # Por cada no terminal busca si dos de sus produciones tiene prefijos comunes
-#     for elem in G.nonTerminals:
-#         Change = True
-#         primes = ''
-#         while Change:
-#             Change = False
-#             for item in elem.productions:
-#                 Continue = False
-#                 for item2 in elem.productions:
-#                     if item != item2:
-#                         LPC = 0
-#                         for i in range((min(len(item.Right), len(item2.Right)))):
-#                             if item.Right[i] == item2.Right[i]:
-#                                 LPC += 1
-#                             else:
-#                                 break
-#                         # En caso de que si tengan prefijos comunes se realiza el siguiente cambio:
-#                         # E -> aA | aB
-#                         # Entonces se cambia por :
-#                         # E -> aE'
-#                         # E' -> A | B
-#                         if LPC > 0:
-#                             primes += '\''
-#                             Temp = G.NonTerminal(f"{elem.Name}{primes}", False)
-#                             elem.productions.remove(item)
-#                             elem.productions.remove(item2)
-#                             G.Productions.remove(item)
-#                             G.Productions.remove(item2)
-#                             elem %= Sentence(*item.Right[0:LPC] + (Temp,))
-#                             alpha = item.Right[LPC:]
-#                             bheta = item2.Right[LPC:]
-#                             if len(alpha) == 0:
-#                                 Temp %= G.Epsilon
-#                             else:
-#                                 Temp %= Sentence(*alpha)
-#                             if len(bheta) == 0:
-#                                 Temp %= G.Epsilon
-#                             else:
-#                                 Temp %= Sentence(*bheta)
-#                             Change = True
-#                             Continue = True
-#                             break
-#                 if Continue:
-#                     continue
-#     return G
-#
-#
-# def deprecated_delete_nonterminal_variables(G: Grammar):
-#     # Todas aquellos no terminales que no deriven en algun string terminal tras 1 o mas producciones
-#     # No son necesarias pues las cadenas siempre estaran formadas unicaente por terminales
-#     # y produciones que no generen terminales son inconsistentes con esta verdad
-#     # por tanto no aportan informacion al lenguaje
-#     # Las produciones posean uno de los terminales que no derivan en string terminales son incosistentes
-#     # Pues estas no terminarian en un string terminal
-#     # Ya sea si lo poseen en la cabecera como en el cuerpo  de la produccion
-#     # estas producciones inconsistentes son guardadas en Removable
-#     # Y no son necesarias en la gramatica
-#
-#     # Computamos el conjunto de las produciones que derivan en terminales tra una o mas produciones
-#     # La demostracion de la correctitud de este algoritmo puede ser inductiva
-#     # buscamos las cadenas que terminen en terminales tras una produccion luego tras dos y asi sucesivamente
-#     deriv_to_terminal = {}
-#     change = True
-#     while change:
-#         change = False
-#         for nonterminal in G.nonTerminals:
-#             for _, body in nonterminal.productions:
-#                 for symbol in body:
-#                     if symbol not in G.terminals:
-#                         try:
-#                             deriv_to_terminal[symbol]
-#                         except KeyError:
-#                             break
-#                 else:
-#                     try:
-#                         deriv_to_terminal[nonterminal]
-#                     except KeyError:
-#                         deriv_to_terminal[nonterminal] = True
-#                         change = True
-#
-#     # Las produciones posean uno de los terminales que no derivan en string terminales son incosistentes
-#     # Pues estas no terminarian en un string terminal
-#     # Ya sea si lo poseen en la cabecera como en el cuerpo  de la produccion
-#     # estas producciones inconsistentes son guardadas en Removable
-#     Removable = set()
-#     for prod in G.Productions:
-#         try:
-#             deriv_to_terminal[prod.Left]
-#             for Elem in prod.Right:
-#                 if Elem not in G.terminals:
-#                     try:
-#                         deriv_to_terminal[Elem]
-#                     except KeyError:
-#                         Removable.add(prod)
-#         except KeyError:
-#             Removable.add(prod)
-#
-#     ## Son removidas de la gramatica las producciones y no terminales inconsistentes
-#     for P in Removable:
-#         G.Productions.remove(P)
-#         P.Left.productions.remove(P)
-#
-#     for nonterminal in G.nonTerminals:
-#         if len(nonterminal.productions) == 0:
-#             G.nonTerminals.remove(nonterminal)
-#
-#     return G
-#
-#
-# def deprecated_delete_unreacheable_variables(G: Grammar):
-#     # Evidentemente los elementos que no pueden ser alcanzados por una o mas producciones del caracter inicial
-#     # No son necesarias pues nunca son utilizadas para generar ningun elemento del lenguaje
-#     # estos elementos inalcanzables pueden ser tanto terminales como no terminales
-#
-#     Que = [G.startSymbol]
-#     S_NTer = {G.startSymbol}
-#     S_Ter = set()
-#     # hayamos los terminales y no terminales alcanzables
-#     while len(Que) > 0:
-#         Element = Que.pop()
-#         for Prod in Element.productions:
-#             for Elem2 in Prod.Right:
-#                 if Elem2 in G.nonTerminals:
-#                     if Elem2 not in S_NTer:
-#                         S_NTer.add(Elem2)
-#                         Que.append(Elem2)
-#                 else:
-#                     S_Ter.add(Elem2)
-#     # Eliminamos las producciones con elementos no alcanzables
-#     Removable = []
-#     for Prod in G.Productions:
-#         if Prod.Left not in S_NTer:
-#             Removable.append(Prod)
-#     for P in Removable:
-#         G.Productions.remove(P)
-#
-#     # Ahora removemos los no terminales no alcanzables
-#     Removable = []
-#     for N in G.nonTerminals:
-#         if N not in S_NTer:
-#             Removable.append(N)
-#     for P in Removable:
-#         G.nonTerminals.remove(P)
-#
-#     # Ahora removemos los terminales no alcanzables
-#     Removable = []
-#     for N in G.terminals:
-#         if N not in S_Ter:
-#             Removable.append(N)
-#     for P in Removable:
-#         G.terminals.remove(P)
-#
-#     # Klever es necesario hacerlo asi como lo escribi
-#     # no se puede hacer en el mismo ciclo de recorrer los terminales pues si los remueves ahi el iterados
-#     # se marea y te saltas elementos
-#     return G
-#
-#
-# #####################
-# #        End        #
-# #####################
-#
-#
-# G = Grammar()
-# E = G.NonTerminal('E', True)
-# T, F = G.NonTerminals('T F')
-# plus, minus, star, div, opar, cpar, num = G.Terminals('+ - * / ( ) int')
-#
-# E %= E + plus + E | E + star + E | T
-# T %= num + opar + E + cpar | num | num + star + num | num + star + num + star
-# print("Probando eliminacion de prefijos comunes")
-# print(deprecated_delete_common_prefix(G))
-#
-# G = Grammar()
-# E = G.NonTerminal('E', True)
-# T, F = G.NonTerminals('T F')
-# plus, minus, star, div, opar, cpar, num = G.Terminals('+ - * / ( ) int')
-#
-# E %= E + plus + T | T  # | E + minus + T
-# T %= T + star + F | F  # | T + div + F
-# F %= num | opar + E + cpar
-# print("\n\nProbando recursion izquierda inmediata")
-# print(delete_inmidiate_left_recursion(G))
-#
-# G = Grammar()
-# S = G.NonTerminal('S', True)
-# A, B, C, D, F = G.NonTerminals('A B C D F')
-# a, b, d, f = G.Terminals('a b d f')
-#
-# S %= A + B + C
-# A %= a + A | G.Epsilon
-# B %= b + B | G.Epsilon
-# C %= G.Epsilon
-# D %= d + D | f
-# F %= f
-#
-# print("\n\nCleaned Gramar")
-# print(clean_grammar(G))
+if __name__ == '__main__':
+    G = Grammar()
+    E = G.NonTerminal('E', True)
+    T, F = G.NonTerminals('T F')
+    plus, minus, star, div, opar, cpar, num = G.Terminals('+ - * / ( ) int')
+
+    E %= E + plus + E | E + star + E | T
+    T %= num + opar + E + cpar | num | num + star + num | num + star + num + star
+    print("Probando eliminacion de prefijos comunes")
+    print(delete_common_prefix(G))
+
+    G = Grammar()
+    E = G.NonTerminal('E', True)
+    T, F = G.NonTerminals('T F')
+    plus, minus, star, div, opar, cpar, num = G.Terminals('+ - * / ( ) int')
+
+    E %= E + plus + T | T  # | E + minus + T
+    T %= T + star + F | F  # | T + div + F
+    F %= num | opar + E + cpar
+    print("\n\nProbando recursion izquierda inmediata")
+    print(delete_inmidiate_left_recursion(G))
+
+    G = Grammar()
+    S = G.NonTerminal('S', True)
+    A, B, C, D, F = G.NonTerminals('A B C D F')
+    a, b, d, f = G.Terminals('a b d f')
+
+    S %= A + B + C
+    A %= a + A | G.Epsilon
+    B %= b + B | G.Epsilon
+    C %= G.Epsilon
+    D %= d + D | f
+    F %= f
+
+    print("\n\nCleaned Gramar")
+    print(clean_grammar(G))

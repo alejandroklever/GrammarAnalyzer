@@ -20,6 +20,21 @@ def clean_regex(regex):
     return s
 
 
+def process_closure(re):
+    if len(re) == 1:
+        return f'{re}*'
+    else:
+        return f'({re})*'
+
+
+def process_concatenation(re1, re2):
+    pass
+
+
+def process_union(re1, re2):
+    pass
+
+
 class RegularGrammar:
     def __init__(self, G):
         self.valid = self.check(G)
@@ -167,7 +182,7 @@ class RegularGrammar:
                     except KeyError:
                         pass
 
-                    transitions[l, r] = regex if r != l else f'({regex})*'  # Insertamos en la tablas de transiciones
+                    transitions[l, r] = regex if r != l else process_closure(regex)  # Insertamos en la tablas de transiciones
 
             # Eliminamos transiciones que entran y salen del estado x
             for l, _ in in_deg:

@@ -1,16 +1,9 @@
 from collections import deque
-from typing import Dict, Tuple, List
 
-from cmp.pycompiler import Sentence, Production, Grammar, NonTerminal, Terminal, Symbol
-from grammalyzer.parsing import LL1Parser
-
-################
-# Custom Types #
-################
-ParsingTable = Dict[Tuple[NonTerminal, Terminal], List[Production]]
+from cmp.pycompiler import Sentence, Production
 
 
-def compute_sentence_forms(G: Grammar):
+def compute_sentence_forms(G):
     sentence = {t: Sentence(t) for t in G.terminals}
 
     change = True
@@ -30,7 +23,7 @@ def compute_sentence_forms(G: Grammar):
     return sentence
 
 
-def compute_fixxed_sentence_forms(G: Grammar, t: Terminal, sentence_forms: Dict[Symbol, Sentence]):
+def compute_fixxed_sentence_forms(G, t, sentence_forms):
     fixxed_sentence = {t: Sentence(t)}
 
     change = True
@@ -51,7 +44,7 @@ def compute_fixxed_sentence_forms(G: Grammar, t: Terminal, sentence_forms: Dict[
     return fixxed_sentence
 
 
-def shortest_production_path(G: Grammar, x: NonTerminal):
+def shortest_production_path(G, x):
     queue = deque([x])
     sentence_form = {x: Sentence(x)}
     production_path = {x: [Production(x, Sentence(x))]}  # Eliminar esta linea de testeo
@@ -91,26 +84,48 @@ def shortest_production_path(G: Grammar, x: NonTerminal):
 
 
 class LLConflictStringGenerator:
-    def __init__(self, parser: LL1Parser):
-        assert parser.ParserConstructionError, 'Expected parser with conflict...'
+    def __init__(self, parser):
+        assert parser.conflict is not None, 'Expected parser with conflict...'
         self.G = parser.G
         self.table = parser.table
-        self.key = parser.conflict
+        self.conflict = parser.conflict
+        self.prod1 = None
+        self.prod2 = None
+        self.s1, self.s2 = self.__generate_conflict()
 
-    def generate_conflict(self):
+    def __generate_conflict(self):
         G = self.G
-        x, s = self.key
-        # table = self.table
-        #
-        # conflict0, conflict1 = table[x, s][0], table[x, s][1]
+        x = self.conflict.nonterminal
+        s = self.conflict.terminal
+        table = self.table
+
+        conflict1, conflict2 = table[x, s][0], table[x, s][1]
         sentence, _ = shortest_production_path(G, x)
         sentence_forms = compute_sentence_forms(G)
         sentence_forms_fixxed = compute_fixxed_sentence_forms(G, s, sentence_forms)
 
-        new_sentence = Sentence()
-        for symbol in sentence:
-            if symbol == x:
-                new_sentence += sentence_forms_fixxed[symbol]
+        i = tuple(sentence).index(x)
+
+        x1 = conflict1.Right[0]
+        x2 = conflict2.Right[0]
+
+        s1 = Sentence(*(sentence[:i] + tuple(conflict1.Right) + sentence[i + 1:]))
+        s2 = Sentence(*(sentence[:i] + tuple(conflict2.Right) + sentence[i + 1:]))
+
+        ss1 = Sentence()
+        for symbol in s1:
+            if symbol == x1:
+                ss1 += sentence_forms_fixxed[symbol]
             else:
-                new_sentence += sentence_forms[symbol]
-        return new_sentence
+                ss1 += sentence_forms[symbol]
+
+        ss2 = Sentence()
+        for symbol in s2:
+            if symbol == x2:
+                ss2 += sentence_forms_fixxed[symbol]
+            else:
+                ss2 += sentence_forms[symbol]
+
+        self.prod1 = conflict1
+        self.prod2 = conflict2
+        return ss1, ss2
