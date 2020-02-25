@@ -1,11 +1,15 @@
 import streamlit as st
-
 from pandas import DataFrame
-from cmp.pycompiler import Grammar, EOF
-from cmp.utils import Token, tokenizer
-from grammalyzer import DerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser, table_to_dataframe
 
-presentation = """
+from cmp.pycompiler import Grammar
+from cmp.utils import Token, tokenizer
+from grammalyzer import (DerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser,
+                         delete_common_prefix, delete_inmidiate_left_recursion, clean_grammar)
+from regex.utils import RegularGrammar
+
+from examples import RGTerminals, RGNonTerminals, RGProductions, RGStartSymbol, RGAliases
+
+PRESENTATION = """
 # Proyecto de Compilacion
 
 # Grammar Analyzer WebApp
@@ -16,47 +20,65 @@ presentation = """
 
 ## Grupo: C-311"""
 
-############
-# Examples #
-############
-example_aliases = """plus + [+]
-minus - [-]
-star * [*]
-div / [/]
-opar ( [(]
-cpar ) [)]
-num num [1-9][0-9]*"""
 
-example_aliases_2 = """num num -?[1-9][0-9]*
-equal = =
-plus + [+]"""
+def show_grammar(G):
+    ptroductions2string = []
+    for key, productions in {str(nt): nt.productions for nt in G.nonTerminals}.items():
+        productions = [str(p.Right) for p in productions]
+        s = f'{key} -> {" | ".join(productions)}'
+        ptroductions2string.append(s)
 
-example_productions = """E %= E + plus + T | E + minus + T | T 
-T %= T + star + F | T + div + F | F
-F %= num | opar + E + cpar"""
-
-example_productions_2 = """E %= T + X
-X %= plus + T + X | minus + T + X | G.Epsilon
-T %= F + Y
-Y %= star + F + | div + F + Y | G.Epsilon
-F %= num | opar + E + cpar"""
-
-example_productions_3 = """E %=  A + equal + A | num
-A %= num + plus + A | num"""
+    body = f"""
+#### Terminales : 
+        {G.terminals}
+#### No Terminales : 
+        {G.nonTerminals}
+#### Producciones :
+"""
+    for x in ptroductions2string:
+        body += '        ' + x + '\n'
+    st.markdown(body)
 
 
+def set_to_dataframe(G, sset):
+    terminals = G.terminals + [G.Epsilon]
+    nonterminals = set(G.nonTerminals)
+
+    d = {key: {t: '-' for t in terminals} for key in sset}
+    for alpha, firsts_set in sset.items():
+
+        if hasattr(alpha, 'IsNonTerminal') and alpha not in nonterminals:
+            del d[alpha]
+            continue
+
+        for f in firsts_set:
+            d[alpha][f] = 'X'
+
+        if firsts_set.contains_epsilon:
+            d[alpha][G.Epsilon] = 'X'
+    return DataFrame.from_dict(d, orient='index', dtype=str)
+
+
+# noinspection PyUnusedLocal
 def exec_instructions(G, *instructions):
     for ins in instructions:
         exec(ins)
 
 
 def terminals_input_control(option, options, input_terminals):
+    """
+    Se encarga del tomar y los terminales
+    :param option:
+    :param options:
+    :param input_terminals:
+    :return:
+    """
     terminals_id = {}
     terminals_regex = {}
 
     st.title('Grammar Analyzer App')
     if option != 'terminal id':
-        aliases = st.text_area('Alias de los terminales: ', value=example_aliases)
+        aliases = st.text_area('Alias de los terminales: ', value=RGAliases)
 
         if aliases:
             aliases = [tuple(s.split()) for s in aliases.split('\n')]
@@ -72,6 +94,27 @@ def terminals_input_control(option, options, input_terminals):
         terminals_id = {term: term for term in input_terminals.split()}
 
     return terminals_id, terminals_regex
+
+
+def modify_grammar(G):
+    if st.checkbox('Modificar Gramatica'):
+        modifications = st.multiselect('Escoja modificaciones', ('Eliminar prefijos comunes',
+                                                                 'Eliminar recursion izquierda inmediata',
+                                                                 'Eliminar producciones innecesarias'))
+        if 'Eliminar prefijos comunes' in modifications:
+            st.subheader('Gramatica sin prefijos comunes')
+            GG = delete_common_prefix(G)
+            show_grammar(GG)
+
+        if 'Eliminar recursion izquierda inmediata' in modifications:
+            st.subheader('Gramatica recursion izquierda inmediata')
+            GG = delete_inmidiate_left_recursion(G)
+            show_grammar(GG)
+
+        if 'Eliminar producciones innecesarias' in modifications:
+            st.subheader('Gramatica sin producciones innecesarias')
+            GG = clean_grammar(G)
+            show_grammar(GG)
 
 
 def manual_input_app():
@@ -96,16 +139,16 @@ def manual_input_app():
     ################################################
     # Start Symbol, Non terminal & terminals Input #
     ################################################
-    start_symbol = st.sidebar.text_input('Simbolo inicial: ', value="E")
-    input_nonterminals = st.sidebar.text_input('No Terminales :', value="T F")
-    input_terminals = st.sidebar.text_input('Terminales :', value="num - + * / ( )  ")
+    start_symbol = st.sidebar.text_input('Simbolo inicial: ', value=RGStartSymbol)
+    input_nonterminals = st.sidebar.text_input('No Terminales :', value=RGNonTerminals)
+    input_terminals = st.sidebar.text_input('Terminales :', value=RGTerminals)
 
     terminals_id, terminals_regex = terminals_input_control(option, options, input_terminals)
 
     ###################
     # Get Productions #
     ###################
-    input_productions = st.text_area('Producciones :', value=example_productions)
+    input_productions = st.text_area('Producciones :', value=RGProductions)
 
     nonterminals_variables = ', '.join(input_nonterminals.split())
     terminal_variables = ', '.join(terminals_id[term] for term in input_terminals.split())
@@ -133,22 +176,49 @@ def manual_input_app():
     ParserClass = parsers[parser_type]
     parser = ParserClass(G)
 
+    ####################
+    # Parsing Conflict #
+    ####################
     if parser.ParserConstructionError:
         # Handle parsing error
         pass
 
+    ############################
+    # Regular Grammar Checking #
+    ############################
+    re_grammar = RegularGrammar(G)
+    if re_grammar.valid:
+        st.sidebar.success("Esta Gramatica es Regular")
+        dfa = re_grammar.dfa
+        regex = re_grammar.regex
+        if st.checkbox('Mostrar DFA de la Gramatica'):
+            st.graphviz_chart(str(dfa.graph()))
+        if st.checkbox('Mostrar la expresion regular'):
+            st.latex(regex)
+
+    ###########################
+    # Visualizar la gramatica #
+    ###########################
+    if st.checkbox('Mostrar Gramatica'):
+        show_grammar(G)
+
     ####################
     # Fisrts & Follows #
     ####################
-    if st.checkbox('Mostrar Firsts & Follows :'):
-        # st.dataframe({'rojo': {'rojo': True}, 'azul': {'azul': True}})
+    if st.checkbox('Mostrar Firsts & Follows'):
         st.subheader("Firsts :")
         st.dataframe(set_to_dataframe(parser.G, parser.firsts))
         st.subheader("Follows :")
         st.dataframe(set_to_dataframe(parser.G, parser.follows))
-        # st.dataframe(table_to_dataframe(parser.action))
-        # st.dataframe(table_to_dataframe(parser.goto))
 
+    ################################
+    # Modificacion de la Gramatica #
+    ################################
+    modify_grammar(G)
+
+    ####################
+    # Analizar cadenas #
+    ####################
     text = st.text_input('Introduzca una cadena para analizar', value='num + num * num * ( num - num + num ) * num')
 
     if st.button('Analyze'):
@@ -157,34 +227,18 @@ def manual_input_app():
         st.graphviz_chart(str(DerivationTree(derivation, parser_type in ('SLR(1)', 'LR(1)', 'LALR(1)')).graph()))
 
 
+
+
 def main():
     app_option = st.sidebar.selectbox('Choose an option', ('-', 'Manual Input', 'Load From File'), index=0)
 
     if app_option == '-':
         st.sidebar.success('Choose an option above')
-        st.markdown(body=presentation)
+        st.markdown(body=PRESENTATION)
     elif app_option == 'Manual Input':
         manual_input_app()
     else:
         pass
-
-
-def set_to_dataframe(G: Grammar, first: dict):
-    d = {}
-    for alpha, firsts_set in first.items():
-        for f in firsts_set:
-            try:
-                d[alpha][f] = True
-            except KeyError:
-                d[alpha] = {f: True}
-
-        if firsts_set.contains_epsilon:
-            try:
-                d[alpha][G.Epsilon] = True
-            except KeyError:
-                d[alpha] = {G.Epsilon: True}
-
-    return DataFrame.from_dict(d, orient='index')
 
 
 if __name__ == "__main__":

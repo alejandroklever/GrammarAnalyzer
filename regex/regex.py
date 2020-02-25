@@ -58,6 +58,7 @@ class Regex:
         return G
 
 
+# noinspection PyAbstractClass
 class RegexParser(ShiftReduceParser):
     def __init__(self, verbose=False):
         G = Grammar()
