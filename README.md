@@ -21,3 +21,6 @@ Given an input grammar, and a parsing algorithm, the following results will be p
     
 ### How to use?
 Run the command line ``stremalit run main.py``, and the magic will appear.
+
+### Note
+Feel free to use the libraries cmp, grammalizer and regex
