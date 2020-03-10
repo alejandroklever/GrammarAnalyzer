@@ -6,8 +6,8 @@ from pandas import DataFrame
 from cmp.pycompiler import Grammar
 from cmp.utils import Token, tokenizer
 from examples import (AritmethicStartSymbol, AritmethicNonTerminalsLR, AritmethicTerminals, AritmethicProductionsLR,
-                      AritmethicAliases, EqualityAliases, EqualityProductions, EqualityNonTerminalsLR, EqualityTerminals, EqualityStartSymbol)
-from grammalyzer import (DerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser, Lexer,
+                      AritmethicAliases)
+from grammalyzer import (LLDerivationTree, LRDerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser, Lexer,
                          delete_common_prefix, delete_inmidiate_left_recursion, clean_grammar)
 from grammalyzer.conflict import LLConflictStringGenerator, LRConflictStringGenerator
 from regex.utils import RegularGrammar
@@ -79,7 +79,7 @@ def lltable_to_dataframe(table):
         except KeyError:
             d[x] = {s: value}
 
-    return DataFrame.from_dict(d, orient='columns', dtype=str)
+    return DataFrame.from_dict(d, orient='index', dtype=str)
 
 
 def set_to_dataframe(G, sset):
@@ -110,17 +110,13 @@ def exec_instructions(G, *instructions):
 def terminals_input_control(option, options, input_terminals):
     """
     Se encarga del tomar y dar formato a los terminales
-    :param option:
-    :param options:
-    :param input_terminals:
-    :return:
     """
     terminals_id = {}
     terminals_regex = {}
 
     st.title('Grammar Analyzer App')
     if option != 'terminal id':
-        aliases = st.text_area('Alias de los terminales: ', value=EqualityAliases)
+        aliases = st.text_area('Alias de los terminales: ', value=AritmethicAliases)
 
         if aliases:
             aliases = [tuple(s.split()) for s in aliases.split('\n')]
@@ -204,16 +200,16 @@ def manual_input_app():
     ################################################
     # Start Symbol, Non terminal & terminals Input #
     ################################################
-    start_symbol = st.sidebar.text_input('Simbolo inicial: ', value=EqualityStartSymbol)
-    input_nonterminals = st.sidebar.text_input('No Terminales :', value=EqualityNonTerminalsLR)
-    input_terminals = st.sidebar.text_input('Terminales :', value=EqualityTerminals)
+    start_symbol = st.sidebar.text_input('Simbolo inicial: ', value=AritmethicStartSymbol)
+    input_nonterminals = st.sidebar.text_input('No Terminales :', value=AritmethicNonTerminalsLR)
+    input_terminals = st.sidebar.text_input('Terminales :', value=AritmethicTerminals)
 
     terminals_id, terminals_regex = terminals_input_control(option, options, input_terminals)
 
     ###################
     # Get Productions #
     ###################
-    input_productions = st.text_area('Producciones :', value=EqualityProductions)
+    input_productions = st.text_area('Producciones :', value=AritmethicProductionsLR)
 
     nonterminals_variables = ', '.join(input_nonterminals.split())
     terminal_variables = ', '.join(terminals_id[term] for term in input_terminals.split())
@@ -308,6 +304,9 @@ def manual_input_app():
     if parser_type != 'LL(1)':
         if st.checkbox('Mostrar Automata LR'):
             st.graphviz_chart(str(parser.automaton.graph()))
+        dtree = LRDerivationTree
+    else:
+        dtree = LLDerivationTree
 
     ################################
     # Modificacion de la Gramatica #
@@ -329,7 +328,7 @@ def manual_input_app():
         if st.button('Analyze'):
             tokens = [t for t in lexer(text) if t.token_type != 'space']
             derivation = parser(tokens)
-            st.graphviz_chart(str(DerivationTree(derivation, parser_type in ('SLR(1)', 'LR(1)', 'LALR(1)')).graph()))
+            st.graphviz_chart(str(dtree(derivation).graph()))
 
 
 def load_from_file_app():
@@ -338,15 +337,16 @@ def load_from_file_app():
 
 
 def main():
-    app_option = st.sidebar.selectbox('Choose an option', ('-', 'Manual Input', 'Load From File'), index=0)
+    app_option = st.sidebar.selectbox('Choose an option', ('-', 'Manual Input'), index=0)
 
     if app_option == '-':
         st.sidebar.success('Choose an option above')
         st.markdown(body=PRESENTATION)
-    elif app_option == 'Manual Input':
-        manual_input_app()
     else:
-        load_from_file_app()
+        try:
+            manual_input_app()
+        except Exception as e:
+            st.error(e.args[0])
 
 
 if __name__ == "__main__":

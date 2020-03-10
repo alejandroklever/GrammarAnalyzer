@@ -42,7 +42,7 @@ class NonTerminal(Symbol):
 
     def __imod__(self, other):
 
-        if isinstance(other, (Sentence)):
+        if isinstance(other, Sentence):
             p = Production(self, other)
             self.Grammar.Add_Production(p)
             return self
@@ -115,7 +115,7 @@ class EOF(Terminal):
         super().__init__('$', G)
 
 
-class Sentence(object):
+class Sentence:
 
     def __init__(self, *args):
         self._symbols = tuple(x for x in args if not x.IsEpsilon)

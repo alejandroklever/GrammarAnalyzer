@@ -68,10 +68,10 @@ class RegexParser(ShiftReduceParser):
 
         self.G = G
         self.verbose = verbose
-        self.action = self.action_table()
-        self.goto = self.goto_table()
+        self.action = self.__action_table()
+        self.goto = self.__goto_table()
 
-    def action_table(self):
+    def __action_table(self):
         G = self.G
         return {
             (0, G["ε"]): ("SHIFT", 27),
@@ -343,7 +343,7 @@ class RegexParser(ShiftReduceParser):
             (40, G["symbol"]): ("SHIFT", 26),
         }
 
-    def goto_table(self):
+    def __goto_table(self):
         G = self.G
         return {
             (0, G["T"]): 40,
@@ -384,8 +384,18 @@ def regex_tokenizer(text, G, skip_whitespaces=True):
     fixed_tokens = {lex: Token(lex, G[lex]) for lex in '| * ( ) ε [ ] ? + -'.split()}
     open_pos = 0
     inside_squares = False
+    set_literal = False
     for i, char in enumerate(text):
         if skip_whitespaces and char.isspace():
+            continue
+
+        if not set_literal and char == '\\':
+            set_literal = True
+            continue
+
+        if set_literal:
+            tokens.append(Token(char, G['symbol']))
+            set_literal = False
             continue
 
         if not inside_squares:
@@ -405,11 +415,7 @@ def regex_tokenizer(text, G, skip_whitespaces=True):
                     inside_squares = False
                     tokens.append(fixed_tokens[char])
             elif char == '-':
-                if (i + 1 < len(text) and text[i + 1] == ']') or text[i - 1] == '[':
-                    tokens.append(Token(char, G['symbol']))
-                elif i - 2 > open_pos and tokens[-2].token_type == G['-']:
-                    tokens.append(Token(char, G['symbol']))
-                elif (i - 1 > open_pos and text[i - 1] == '-') or (i + 1 < len(text) and text[i + 1] == '-'):
+                if is_minus_a_symbol(G, text, tokens, i, open_pos):
                     tokens.append(Token(char, G['symbol']))
                 else:
                     tokens.append(fixed_tokens[char])
@@ -424,8 +430,6 @@ def regex_tokenizer(text, G, skip_whitespaces=True):
 
 
 def is_minus_a_symbol(G, text, tokens, i, open_pos):
-    return (i + 1 < len(text) and text[i + 1] == ']') \
-           or (text[i - 1] == '[') \
-           or (i - 2 > open_pos and tokens[-2].token_type == G['-']) \
-           or (i - 1 > open_pos and text[i - 1] == '-') \
-           or (i + 1 < len(text) and text[i + 1] == '-')
+    return (i + 1 < len(text) and text[i + 1] == ']') or (text[i - 1] == '[') or \
+           (i - 2 > open_pos and tokens[-2].token_type == G['-']) or \
+           (i - 1 > open_pos and text[i - 1] == '-') or (i + 1 < len(text) and text[i + 1] == '-')

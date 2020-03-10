@@ -1,11 +1,13 @@
 from enum import auto, Enum
 
-from .utils import compute_firsts, compute_follows
 from .automatas import build_LR0_automaton, build_LR1_automaton, build_LALR1_automaton
-from pandas import DataFrame
+from .utils import compute_firsts, compute_follows
 
 
 class LRConflictType(Enum):
+    """
+    Enum for mark the type of a lr-family parser
+    """
     ReduceReduce = auto()
     ShiftReduce = auto()
 
@@ -22,6 +24,9 @@ class LRConflict:
 
 
 class LLConflictType(Enum):
+    """
+    Enum for mark the type of a ll parser
+    """
     FirstFirst = auto()
     FollowFollow = auto()
 

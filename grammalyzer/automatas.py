@@ -5,7 +5,9 @@ from cmp.utils import ContainerSet
 from .utils import compute_firsts, compute_local_first
 
 
-##### SLR AUTOMATA #####
+################
+# SLR AUTOMATA #
+################
 def closure_lr0(items):
     closure = ContainerSet(*items)
 

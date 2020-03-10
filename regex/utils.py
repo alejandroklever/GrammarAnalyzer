@@ -27,14 +27,6 @@ def process_closure(re):
         return f'({re})*'
 
 
-def process_concatenation(re1, re2):
-    pass
-
-
-def process_union(re1, re2):
-    pass
-
-
 class RegularGrammar:
     def __init__(self, G):
         self.valid = self.check(G)

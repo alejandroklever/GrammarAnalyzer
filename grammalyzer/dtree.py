@@ -19,17 +19,47 @@ class DerivationTreeNode:
 
 
 class DerivationTree:
-    def __init__(self, productions, is_lr=False):
-        self.root = self._build_tree(productions, is_lr)
+    def __init__(self, productions):
+        self.root = self._build_tree(productions)
 
-    def _build_tree(self, productions, is_lr):
-        p = productions if not is_lr else reversed(productions)
-        iter_productions = iter(p)
-        if is_lr:
-            return self._extreme_right_derivation(iter_productions)
-        return self._extreme_left_derivation(productions)
+    def _build_tree(self, productions):
+        raise NotImplementedError
 
-    def _extreme_left_derivation(self, productions, node=None):
+    def _derivation(self, productions, node=None):
+        raise NotImplementedError
+
+    def graph(self):
+        G = pydot.Dot(graph_type='graph', rankdir='TD', margin=0.1)
+        stack = [self.root]
+
+        while stack:
+            current = stack.pop()
+            ids = id(current)
+            G.add_node(pydot.Node(name=ids, label=str(current), shape='circle'))
+            for child in current.childs:
+                stack.append(child)
+                G.add_node(pydot.Node(name=id(child), label=str(child), shape='circle'))
+                G.add_edge(pydot.Edge(ids, id(child)))
+
+        return G
+
+    # noinspection PyUnresolvedReferences
+    def _repr_svg_(self):
+        try:
+            return self.graph().create_svg().decode('utf8')
+        except AttributeError:
+            pass
+
+    def __str__(self):
+        return str(self.root)
+
+
+class LLDerivationTree(DerivationTree):
+    def _build_tree(self, productions):
+        iter_productions = iter(productions)
+        return self._derivation(iter_productions)
+
+    def _derivation(self, productions, node=None):
         try:
             head, body = next(productions)
         except StopIteration:
@@ -45,10 +75,16 @@ class DerivationTree:
                 node.add_child(symbol)
             elif symbol.IsNonTerminal:
                 next_node = node.add_child(symbol)
-                self._extreme_left_derivation(productions, next_node)
+                self._derivation(productions, next_node)
         return node
 
-    def _extreme_right_derivation(self, productions, node=None):
+
+class LRDerivationTree(DerivationTree):
+    def _build_tree(self, productions):
+        iter_productions = iter(reversed(productions))
+        return self._derivation(iter_productions)
+
+    def _derivation(self, productions, node=None):
         try:
             head, body = next(productions)
         except StopIteration:
@@ -64,31 +100,6 @@ class DerivationTree:
                 node.add_child(symbol)
             elif symbol.IsNonTerminal:
                 next_node = node.add_child(symbol)
-                self._extreme_right_derivation(productions, next_node)
+                self._derivation(productions, next_node)
         node.childs.reverse()
         return node
-
-    def graph(self):
-        G = pydot.Dot(graph_type='graph', rankdir='TD', margin=0.1)
-        stack = [self.root]
-        
-        while stack:
-            current = stack.pop()
-            ids = id(current)
-            G.add_node(pydot.Node(name=ids, label=str(current), shape='circle'))
-            for child in current.childs:
-                stack.append(child)
-                G.add_node(pydot.Node(name=id(child), label=str(child), shape='circle'))
-                G.add_edge(pydot.Edge(ids, id(child)))
-        
-        return G
-
-    # noinspection PyUnresolvedReferences
-    def _repr_svg_(self):
-        try:
-            return self.graph().create_svg().decode('utf8')
-        except AttributeError:
-            pass
-
-    def __str__(self):
-        return str(self.root)

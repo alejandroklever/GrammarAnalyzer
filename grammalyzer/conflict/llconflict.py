@@ -3,7 +3,10 @@ from collections import deque
 from cmp.pycompiler import Sentence, Production
 
 
-def compute_sentence_forms(G):
+def compute_sentence(G):
+    """
+    For each non terminal 'X' in the Grammar G compute a sentence of terminals 'S' where X ->* S
+    """
     sentence = {t: Sentence(t) for t in G.terminals}
 
     change = True
@@ -23,7 +26,11 @@ def compute_sentence_forms(G):
     return sentence
 
 
-def compute_fixxed_sentence_forms(G, t, sentence_forms):
+def compute_fixxed_sentence(G, t, sentence_forms):
+    """
+    For each non terminal 'X' in the Grammar G compute a sentence of terminals that start with t 'tS'
+    where X ->* tS
+    """
     fixxed_sentence = {t: Sentence(t)}
 
     change = True
@@ -45,6 +52,10 @@ def compute_fixxed_sentence_forms(G, t, sentence_forms):
 
 
 def shortest_production_path(G, x):
+    """
+    Compute the shortest poduction path from start symbol of
+    Grammar G to a sentence form thad Contains the Non Temrinal X
+    """
     queue = deque([x])
     sentence_form = {x: Sentence(x)}
     production_path = {x: [Production(x, Sentence(x))]}  # Eliminar esta linea de testeo
@@ -101,8 +112,8 @@ class LLConflictStringGenerator:
 
         conflict1, conflict2 = table[x, s][0], table[x, s][1]
         sentence, _ = shortest_production_path(G, x)
-        sentence_forms = compute_sentence_forms(G)
-        sentence_forms_fixxed = compute_fixxed_sentence_forms(G, s, sentence_forms)
+        sentence_forms = compute_sentence(G)
+        sentence_forms_fixxed = compute_fixxed_sentence(G, s, sentence_forms)
 
         i = tuple(sentence).index(x)
 

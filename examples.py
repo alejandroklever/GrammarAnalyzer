@@ -1,4 +1,3 @@
-
 RGTerminals = "0 1"
 RGStartSymbol = "A"
 RGNonTerminals = "B C"
@@ -12,12 +11,12 @@ C %= one
 AritmethicTerminals = "num - + * / ( )  "
 AritmethicStartSymbol = "E"
 AritmethicNonTerminalsLR = "T F"
-AritmethicAliases = """plus + [+]
-minus - [-]
-star * [*]
-div / [/]
-opar ( [(]
-cpar ) [)]
+AritmethicAliases = """plus + \+
+minus - \-
+star * \*
+div / /
+opar ( \(
+cpar ) \)
 num num -?[1-9][0-9]*"""
 AritmethicProductionsLR = """E %= E + plus + T | E + minus + T | T 
 T %= T + star + F | T + div + F | F
@@ -32,7 +31,7 @@ F %= num | opar + E + cpar"""
 
 EqualityTerminals = "num + ="
 EqualityStartSymbol = "E"
-EqualityNonTerminalsLR = "A"
+EqualityNonTerminals = "A"
 EqualityAliases = """num num -?[1-9][0-9]*
 equal = =
 plus + [+]"""
