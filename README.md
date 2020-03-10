@@ -1,6 +1,6 @@
 # GrammarAnalyzer
 ## University of Havana
-## Numerical Math Project
+## Compilation Project
 ### Topic:
 A simple Streamlit application for grammar analysis, automaton visualization, and try parsers LL(1), SLR(1), LR(1), LALR(1).
 ### Abstract:
