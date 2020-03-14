@@ -7,10 +7,10 @@ from cmp.pycompiler import Grammar
 from cmp.utils import Token, tokenizer
 from examples import (AritmethicStartSymbol, AritmethicNonTerminalsLR, AritmethicTerminals, AritmethicProductionsLR,
                       AritmethicAliases)
-from grammalyzer import (LLDerivationTree, LRDerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser, Lexer,
-                         delete_common_prefix, delete_inmidiate_left_recursion, clean_grammar)
-from grammalyzer.conflict import LLConflictStringGenerator, LRConflictStringGenerator
-from regex.utils import RegularGrammar
+from cmp.grammalyzer import (LLDerivationTree, LRDerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser, Lexer,
+                             delete_common_prefix, delete_inmidiate_left_recursion, clean_grammar)
+from cmp.grammalyzer.conflict import LLConflictStringGenerator, LRConflictStringGenerator
+from cmp.regex.utils import RegularGrammar
 
 PRESENTATION = """
 # Proyecto de Compilacion
@@ -25,11 +25,11 @@ PRESENTATION = """
 
 
 def show_grammar(G):
-    ptroductions2string = []
+    productions2string = []
     for key, productions in {str(nt): nt.productions for nt in G.nonTerminals}.items():
         productions = [str(p.Right) for p in productions]
         s = f'{key} -> {" | ".join(productions)}'
-        ptroductions2string.append(s)
+        productions2string.append(s)
 
     body = f"""
 #### Terminales : 
@@ -38,7 +38,7 @@ def show_grammar(G):
         {' '.join(t.Name for t in G.nonTerminals)}
 #### Producciones :
 """
-    for x in ptroductions2string:
+    for x in productions2string:
         body += '        ' + x + '\n'
     st.markdown(body)
 
@@ -136,9 +136,9 @@ def terminals_input_control(option, options, input_terminals):
 
 def modify_grammar(G):
     if st.checkbox('Modificar Gramatica'):
-        modifications = st.multiselect('Escoja modificaciones', ('Eliminar prefijos comunes',
+        modifications = st.multiselect('Escoja modificaciones', ['Eliminar prefijos comunes',
                                                                  'Eliminar recursion izquierda inmediata',
-                                                                 'Eliminar producciones innecesarias'))
+                                                                 'Eliminar producciones innecesarias'])
         if 'Eliminar prefijos comunes' in modifications:
             st.subheader('Gramatica sin prefijos comunes')
             GG = delete_common_prefix(G)
@@ -323,7 +323,7 @@ def manual_input_app():
         ####################
         # Analizar cadenas #
         ####################
-        text = st.text_input('Introduzca una cadena para analizar', value='1 + 1 * 1 * ( 1 - 1 + 1 ) * 1')
+        text = st.text_input('Introduzca una cadena para analizar', value='')
 
         if st.button('Analyze'):
             tokens = [t for t in lexer(text) if t.token_type != 'space']

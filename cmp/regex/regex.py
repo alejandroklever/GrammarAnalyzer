@@ -1,6 +1,6 @@
 from cmp.pycompiler import Grammar, AttributeProduction, Sentence
 from cmp.utils import Token
-from grammalyzer import ShiftReduceParser
+from cmp.grammalyzer import ShiftReduceParser
 
 from .ast import (ClosureNode, ConcatNode, EpsilonNode, PlusNode, QuestionNode,
                   RangeNode, SymbolNode, UnionNode)

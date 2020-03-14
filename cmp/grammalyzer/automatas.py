@@ -29,7 +29,7 @@ def goto_lr0(items, symbol):
     return frozenset(item.NextItem() for item in items if item.NextSymbol == symbol)
 
 
-def build_LR0_automaton(G):
+def build_lr0_automaton(G):
     assert len(G.startSymbol.productions) == 1, 'Grammar must be augmented'
 
     start_production = G.startSymbol.productions[0]
@@ -112,7 +112,7 @@ def goto_lr1(items, symbol, firsts=None, just_kernel=False):
     return items if just_kernel else closure_lr1(items, firsts)
 
 
-def build_LR1_automaton(G, firsts=None):
+def build_lr1_automaton(G, firsts=None):
     assert len(G.startSymbol.productions) == 1, 'Grammar must be augmented'
 
     if not firsts:
@@ -152,7 +152,7 @@ def build_LR1_automaton(G, firsts=None):
     return automaton
 
 
-def build_LALR1_automaton(G, firsts=None):
+def build_larl1_automaton(G, firsts=None):
     assert len(G.startSymbol.productions) == 1, 'Grammar must be augmented'
 
     if not firsts:

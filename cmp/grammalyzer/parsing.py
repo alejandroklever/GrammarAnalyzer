@@ -1,6 +1,6 @@
 from enum import auto, Enum
 
-from .automatas import build_LR0_automaton, build_LR1_automaton, build_LALR1_automaton
+from .automatas import build_lr0_automaton, build_lr1_automaton, build_larl1_automaton
 from .utils import compute_firsts, compute_follows
 
 
@@ -241,7 +241,7 @@ class ShiftReduceParser:
 
 class SLR1Parser(ShiftReduceParser):
     def _build_automaton(self):
-        return build_LR0_automaton(self.augmented_G)
+        return build_lr0_automaton(self.augmented_G)
 
     def _lookaheads(self, item):
         return self.follows[item.production.Left]
@@ -249,7 +249,7 @@ class SLR1Parser(ShiftReduceParser):
 
 class LR1Parser(ShiftReduceParser):
     def _build_automaton(self):
-        return build_LR1_automaton(self.augmented_G, firsts=self.firsts)
+        return build_lr1_automaton(self.augmented_G, firsts=self.firsts)
 
     def _lookaheads(self, item):
         return item.lookaheads
@@ -257,4 +257,4 @@ class LR1Parser(ShiftReduceParser):
 
 class LALR1Parser(LR1Parser):
     def _build_automaton(self):
-        return build_LALR1_automaton(self.augmented_G, firsts=self.firsts)
+        return build_larl1_automaton(self.augmented_G, firsts=self.firsts)
