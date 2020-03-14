@@ -52,7 +52,7 @@ def delete_common_prefix(G: Grammar):
     return G
 
 
-def delete_inmidiate_left_recursion(G: Grammar):
+def delete_immediate_left_recursion(G: Grammar):
     """
     Algoritmo para eliminar la recursion izquierda inmediata
     """
@@ -256,7 +256,7 @@ def delete_unreacheable_variables(G: Grammar):
 
 def add_production(head, sentence, dic, stack):
     """
-    Auxiliar Method to add new productions to the grammar, queue and dict
+    Assistant Method to add new productions to the grammar, queue and dict
     """
     try:
         dic[sentence]
@@ -266,40 +266,3 @@ def add_production(head, sentence, dic, stack):
             head %= sentence
         stack.append(head.productions[-1])
 
-
-if __name__ == '__main__':
-    G = Grammar()
-    E = G.NonTerminal('E', True)
-    T, F = G.NonTerminals('T F')
-    plus, minus, star, div, opar, cpar, num = G.Terminals('+ - * / ( ) int')
-
-    E %= E + plus + E | E + star + E | T
-    T %= num + opar + E + cpar | num | num + star + num | num + star + num + star
-    print("Probando eliminacion de prefijos comunes")
-    print(delete_common_prefix(G))
-
-    G = Grammar()
-    E = G.NonTerminal('E', True)
-    T, F = G.NonTerminals('T F')
-    plus, minus, star, div, opar, cpar, num = G.Terminals('+ - * / ( ) int')
-
-    E %= E + plus + T | T  # | E + minus + T
-    T %= T + star + F | F  # | T + div + F
-    F %= num | opar + E + cpar
-    print("\n\nProbando recursion izquierda inmediata")
-    print(delete_inmidiate_left_recursion(G))
-
-    G = Grammar()
-    S = G.NonTerminal('S', True)
-    A, B, C, D, F = G.NonTerminals('A B C D F')
-    a, b, d, f = G.Terminals('a b d f')
-
-    S %= A + B + C
-    A %= a + A | G.Epsilon
-    B %= b + B | G.Epsilon
-    C %= G.Epsilon
-    D %= d + D | f
-    F %= f
-
-    print("\n\nCleaned Gramar")
-    print(clean_grammar(G))

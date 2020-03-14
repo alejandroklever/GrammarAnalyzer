@@ -8,7 +8,7 @@ from cmp.utils import Token, tokenizer
 from examples import (AritmethicStartSymbol, AritmethicNonTerminalsLR, AritmethicTerminals, AritmethicProductionsLR,
                       AritmethicAliases)
 from cmp.grammalyzer import (LLDerivationTree, LRDerivationTree, LALR1Parser, LL1Parser, LR1Parser, SLR1Parser, Lexer,
-                             delete_common_prefix, delete_inmidiate_left_recursion, clean_grammar)
+                             delete_common_prefix, delete_immediate_left_recursion, clean_grammar)
 from cmp.grammalyzer.conflict import LLConflictStringGenerator, LRConflictStringGenerator
 from cmp.regex.utils import RegularGrammar
 
@@ -146,7 +146,7 @@ def modify_grammar(G):
 
         if 'Eliminar recursion izquierda inmediata' in modifications:
             st.subheader('Gramatica recursion izquierda inmediata')
-            GG = delete_inmidiate_left_recursion(G)
+            GG = delete_immediate_left_recursion(G)
             show_grammar(GG)
 
         if 'Eliminar producciones innecesarias' in modifications:
