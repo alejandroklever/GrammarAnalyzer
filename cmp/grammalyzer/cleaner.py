@@ -89,7 +89,7 @@ def clean_grammar(G: Grammar):
     G = delete_epsilon(G)
     G = delete_unary_productions(G)
     G = delete_nonterminal_variables(G)
-    G = delete_unreacheable_variables(G)
+    G = delete_unreachable_variables(G)
     return G
 
 
@@ -212,7 +212,7 @@ def delete_nonterminal_variables(G: Grammar):
     return G
 
 
-def delete_unreacheable_variables(G: Grammar):
+def delete_unreachable_variables(G: Grammar):
     # Para eliminar mas rapido castearemos las listas a set,
     # de esta forma la eliminacion sera O(1)
     G.terminals = set(G.terminals)
